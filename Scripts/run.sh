@@ -81,6 +81,10 @@ if [[ "$run_mcscf" =~ ^[Yy]$ ]]; then
     cp ./Columbus/$calculation_set_var/$multiplicity/input_values.txt ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
     cp ./Scripts/mcscf.exp ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
     cp ./Scripts/geom ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
+    if [ "$use_slurm" = "yes" ]; then
+        cp ./Scripts/columbus.slurm ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
+    fi
+
 
     cd ./Columbus/$calculation_set_var/$multiplicity/MCSCF || { echo "MCSCF directory not found!"; exit 1; }
 
@@ -94,12 +98,30 @@ if [[ "$run_mcscf" =~ ^[Yy]$ ]]; then
     fi
 
     echo "Running Columbus runc..."
-    $COLUMBUS/runc -m $mcscf_mem > runls &
-    runc_pid=$!
-    echo "runc PID: $runc_pid"
-    wait $runc_pid
-    echo "runc finished."
-    echo "ran with mem $mcscf_mem"
+    if [ "$use_slurm" != "yes" ]; then
+        $COLUMBUS/runc -m $mcscf_mem > runls &
+        runc_pid=$!
+        echo "runc PID: $runc_pid"
+        wait $runc_pid
+        echo "runc finished."
+    else
+        # Submit the Slurm job and wait until it completes
+        slurm_job_id=$(sbatch ./columbus.slurm | awk '{print $4}')
+        echo "Slurm job submitted with Job ID: $slurm_job_id"
+
+        # Wait for the Slurm job to finish
+        while true; do
+            job_state=$(squeue -j $slurm_job_id -h -o "%T")
+            if [ -z "$job_state" ]; then
+                # Job no longer in queue, assumed finished
+                break
+            fi
+            sleep 5  # check every 5 seconds
+        done
+
+        echo "Slurm job $slurm_job_id finished."
+    fi
+
 
     cp MOCOEFS/mocoef_mc.sp mocoef
     cd ../../../..
@@ -119,7 +141,7 @@ if [[ "$run_cisd" =~ ^[Yy]$ ]]; then
     cp ./MCSCF/* ./CI/
     cp ../../../Scripts/cisd-$run_mode.exp ./CI/
     if [ "$use_slurm" = "yes" ]; then
-        cp ../../../Scripts/columbus.slurm ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
+        cp ../../../Scripts/columbus.slurm ./Columbus/$calculation_set_var/$multiplicity/CI/
     fi
 
     cd ./CI || { echo "CI directory not found!"; exit 1; }
@@ -196,7 +218,7 @@ if [[ "$run_aqcc" =~ ^[Yy]$ ]]; then
     cp ./CI/* ./AQCC/
     cp ../../../Scripts/aqcc-$run_mode.exp ./AQCC/
     if [ "$use_slurm" = "yes" ]; then
-        cp ../../../Scripts/columbus.slurm ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
+        cp ../../../Scripts/columbus.slurm ./Columbus/$calculation_set_var/$multiplicity/AQCC/
     fi
 
     cd ./AQCC || { echo "AQCC directory not found!"; exit 1; }
@@ -232,7 +254,6 @@ if [[ "$run_aqcc" =~ ^[Yy]$ ]]; then
 
 
     echo "Running Columbus runc..."
-    echo "$COLUMBUS/runc -m $aqcc_mem > runls &"
     if [ "$use_slurm" != "yes" ]; then
         $COLUMBUS/runc -m $aqcc_mem > runls &
         runc_pid=$!
