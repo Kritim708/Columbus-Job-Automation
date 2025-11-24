@@ -1,0 +1,5 @@
+INC=/usr/local/sw/Columbus/columbus-v7.2.2/Columbus/CPAN /usr/local/sw/Columbus/columbus-v7.2.2/Columbus/perlscripts CODE(0x1ab3b50)
+Perlversion:5.012004
+choice=geom
+intprogram=hermit
+

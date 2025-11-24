@@ -1,0 +1,1311 @@
+➡️ Starting MCSCF stage...
+Running mcscf.exp...
+spawn /usr/local/columbus722/colinp
+couldn't execute "/usr/local/columbus722/colinp": no such file or directory
+    while executing
+"spawn /usr/local/columbus722/colinp"
+    (file "./mcscf.exp" line 24)
+Running Columbus runc...
+runc PID: 176574
+ Cannot open control.run, errno=No such file or directory
+  run the interactive program colinp first.
+runc finished.
+ran with mem 4000
+cp: cannot stat 'MOCOEFS/mocoef_mc.sp': No such file or directory
+➡️ Starting CISD stage...
+cp: cannot create regular file './Columbus/DZ/Triplet/MCSCF/': No such file or directory
+Running cisd-ser.exp...
+spawn /usr/local/columbus722/colinp
+couldn't execute "/usr/local/columbus722/colinp": no such file or directory
+    while executing
+"spawn /usr/local/columbus722/colinp"
+    (file "./cisd-ser.exp" line 25)
+✅ cisd-ser.exp finished successfully
+Running Columbus runc...
+sbatch: error: Unable to open file ./columbus.slurm
+Slurm job submitted with Job ID: 
+Slurm job  finished.
+➡️ Starting AQCC stage...
+cp: cannot create regular file './Columbus/DZ/Triplet/MCSCF/': No such file or directory
+Before AQCC Columbus is: /usr/local/sw/Columbus/columbus-v7.2.2/Columbus
+Before AQCC Columbus is: /usr/local/sw/Columbus/columbus-v7.2.2/Columbus
+Running aqcc-ser.exp...
+spawn /usr/local/columbus722/colinp
+couldn't execute "/usr/local/columbus722/colinp": no such file or directory
+    while executing
+"spawn /usr/local/columbus722/colinp"
+    (file "./aqcc-ser.exp" line 25)
+✅ aqcc-ser.exp finished successfully
+Running Columbus runc...
+/usr/local/sw/Columbus/columbus-v7.2.2/Columbus/runc -m 4000 > runls &
+sbatch: error: Unable to open file ./columbus.slurm
+Slurm job submitted with Job ID: 
+Slurm job  finished.
+✅ AQCC stage completed successfully.
+🎉 All selected stages completed successfully.
+➡️ Starting MCSCF stage...
+Running mcscf.exp...
+spawn /usr/local/columbus722/colinp
+couldn't execute "/usr/local/columbus722/colinp": no such file or directory
+    while executing
+"spawn /usr/local/columbus722/colinp"
+    (file "./mcscf.exp" line 24)
+Running Columbus runc...
+runc PID: 1385431
+ Cannot open control.run, errno=No such file or directory
+  run the interactive program colinp first.
+runc finished.
+ran with mem 4000
+cp: cannot stat 'MOCOEFS/mocoef_mc.sp': No such file or directory
+➡️ Starting CISD stage...
+Running cisd-ser.exp...
+spawn /usr/local/columbus722/colinp
+couldn't execute "/usr/local/columbus722/colinp": no such file or directory
+    while executing
+"spawn /usr/local/columbus722/colinp"
+    (file "./cisd-ser.exp" line 25)
+✅ cisd-ser.exp finished successfully
+Running Columbus runc...
+runc PID: 1385446
+ Cannot open control.run, errno=No such file or directory
+  run the interactive program colinp first.
+runc finished.
+➡️ Starting AQCC stage...
+Before AQCC Columbus is: /usr/local/sw/Columbus/columbus-v7.2.2/Columbus
+Before AQCC Columbus is: /usr/local/sw/Columbus/columbus-v7.2.2/Columbus
+Running aqcc-ser.exp...
+spawn /usr/local/columbus722/colinp
+couldn't execute "/usr/local/columbus722/colinp": no such file or directory
+    while executing
+"spawn /usr/local/columbus722/colinp"
+    (file "./aqcc-ser.exp" line 25)
+✅ aqcc-ser.exp finished successfully
+Running Columbus runc...
+/usr/local/sw/Columbus/columbus-v7.2.2/Columbus/runc -m 4000 > runls &
+runc PID: 1385458
+ Cannot open control.run, errno=No such file or directory
+  run the interactive program colinp first.
+runc finished.
+✅ AQCC stage completed successfully.
+🎉 All selected stages completed successfully.
+➡️ Starting MCSCF stage...
+Running mcscf.exp...
+spawn /usr/local/sw/Columbus/columbus-v7.2.2/Columbus/colinp
+[?1049h[22;0;0t[1;41r(B[m[4l[?7h[H[2J[1;27H(B[0;7mCOLUMBUS INPUT FACILITY [3;31H(B[mmain menu options
+
+->   1) Integral program input (for argos/dalton/turbocol/molcas)
+[6G2) SCF input
+[6G3) MCSCF input
+[6G4) CI input
+[6G5) Set up job control
+[6G6) Utilities
+[6G7) Exit the input facility[39;28H(B[0;7mVersion 7.2, 2022-09 fp
+
+(All) (B[m h)elp ?)item-help q)uit u)p b)egin e)nd r)efresh[5;3H[H[2J Run the preparation program (prepinp)? (y|n) y
+[41;1H[?1049l[23;0;0t[?1l>[H[2J[3JInput for DALTON (1) or MOLCAS (2): 1
+Enter the point group symmetry:  c2v
+
+Name of the file containing the cartesian coordinates
+of the unique atoms (COLUMBUS format): geom
+
+Number of atoms = 6 
+Sum formula:      H2 N1 C3 
+
+Show only basis sets containing the following string:
+(e.g. 6-31g, cc-pv - leave empty to show all basis sets)
+
+-- Set basis set --
+ 1:   cc-pvdz (4s,1p)->[2s,1p] 
+ 2:   cc-(p)vdz (4s)->[2s] (without p on H) 
+ 3:   aug-cc-pvdz 
+ 4:   aug'-cc-pvdz (without p function in aug-set) 
+ 5:   d'-aug-cc-pvdz (without p function in d-set) 
+ 6:   d-aug-cc-pvdz 
+ 7:   cc-pvtz(5s,2p,1d)->[3s,2p,1d] 
+ 8:   aug'-cc-pvtz (without d function in aug-set) 
+ 9:   aug-cc-pvtz 
+ 10:   d'-aug'-cc-pvtz (without d function in aug- and d-set) 
+ 11:   d''-aug'-cc-pvtz (without d in aug-set and without p and d in d-set) 
+ 12:   aug-cc-pvtz(-d) (without any d functions) 
+ 13:   cc-pvqz(6s,3p,2d,1f)->[4s,3p,2d,1f] 
+ 14:   cc-pv5z(8s,4p,3d,2f,1g)->[5s,4p,3d,2f,1g] 
+ 15:   diffuse functions for cc-pvdz(1s,1p) 
+ 16:   diffuse functions for cc-pvtz(1s,1p,1d) 
+ 17:   diffuse functions for cc-pvqz(1s,1p,1d,1f) 
+ 18:   diffuse functions for cc-pv5z(1s,1p,1d,1f,1g) 
+ 19:   SV Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(4s)/[2s] 
+ 20:   TZ Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(5s)/[3s] 
+ 21:   P Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 additional p-GTO 
+ 22:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(6s)[3s] 
+ 23:   Widmark et al TCA 79(1991)419(8s4p3d) (ANO)  
+ 24:   Pierloot et al TCA 90(1995)87(7s3p) (ANO) 
+ 25:   HYDROGEN    Pople 3-21g* 
+ 26:   HYDROGEN    Pople 3-21++g* 
+ 27:   HYDROGEN    Pople 6-31g or 6-31g* 
+ 28:   HYDROGEN    Pople 6-31g** 
+ 29:   HYDROGEN    Pople 6-31++g** 
+ 30:   HYDROGEN    Pople 6-311g* 
+ 31:   HYDROGEN    Pople 6-311g** 
+ 32:   HYDROGEN    Pople 6-311++g** 
+ 33:   H.Pol.Sadlej.6s4p.3s2p 
+ 0:    Other library 
+
+Select the basis set for atom H: → Selecting basis for atom: H
+1
+
+Until now you've set the following basis sets:
+ H :: cc-pvdz (4s,1p)->[2s,1p]
+ 
+ 1:   cc-pvdz(9s,4p,1d)->[3s,2p,1d] 
+ 2:   aug-cc-pvdz 
+ 3:   aug'-cc-pvdz (without d function in aug-set) 
+ 4:   d'-aug-cc-pvdz (without d function in d-set) 
+ 5:   d-aug-cc-pvdz 
+ 6:   cc-pvtz(10s,5p,2d,1f)->[4s,3p,2d,1f] 
+ 7:   aug'-cc-pvtz (without f function in aug-set) 
+ 8:   aug-cc-pvtz 
+ 9:   d'-aug'-cc-pvtz (without f function in aug- and d-set) 
+ 10:   d''-aug'-cc-pvtz (without f in aug-set and without f and d in d-set) 
+ 11:   cc-pvqz(12s,6p,3d,2f,1g)->[5s,4p,3d,2f,1g] 
+ 12:   cc-pv5z(14s,8p,4d,3f,2g,1h)->[6s,5p,4d,3f,2g,1h] 
+ 13:   diffuse functions for cc-pvdz(1s,1p,1d) 
+ 14:   diffuse functions for cc-pvtz(1s,1p,1d,1f) 
+ 15:   diffuse functions for cc-pvqz(1s,1p,1d,1f,1g) 
+ 16:   diffuse functions for cc-pv5z(1s,1p,1d,1f,1g,1h) 
+ 17:   SV Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(7s4p)/[3s2p] 
+ 18:   SVP Ahlrichs[3s2p1d] 
+ 19:   DZ Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(8s4p)/[4s2p] 
+ 20:   TZ Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(10s6p)/[6s3p] 
+ 21:   P Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 additional d-GTO 
+ 22:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(6s3p)[3s2p] 
+ 23:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s3p)[3s2p] 
+ 24:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(8s4p)[3s2p] 
+ 25:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(9s5p)[4s3p] 
+ 26:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(9s5p)[5s3p] 
+ 27:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(11s7p)[6s4p] 
+ 28:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(13s8p)[8s5p] 
+ 29:   Widmark et al TCA 79(1991)419(14s9p4d3f) (ANO)  
+ 30:   Pierloot et al TCA 90(1995)87(10s6p3d) (ANO) 
+ 31:   NITROGEN    Pople 3-21g* 
+ 32:   NITROGEN    Pople 3-21++g* 
+ 33:   NITROGEN    Pople 6-31g 
+ 34:   NITROGEN    Pople 6-31g*  or 6-31g** 
+ 35:   NITROGEN    Pople 6-31++g* or 6-31++g** 
+ 36:   NITROGEN    Pople 6-311g* or 6-311g** 
+ 37:   NITROGEN    Pople 6-311++g* or 6-311++g** 
+ 38:   PAC-ECP basis; Pitzer group; cc-pvdz (4s4p1d)/[3s2p1d]/[2s2p1d] 
+ 39:   Pseudo Basis: Stevens, Basch and Krauss, JCP 81, 6026 (1984). (4s4p)/[2s2p] 
+ 0:    Other library 
+
+Select the basis set for atom N: → Selecting basis for atom: N
+1
+
+Until now you've set the following basis sets:
+ H :: cc-pvdz (4s,1p)->[2s,1p]
+ N :: cc-pvdz(9s,4p,1d)->[3s,2p,1d]
+ 
+ 1:   cc-pvdz(9s,4p,1d)->[3s,2p,1d] 
+ 2:   aug-cc-pvdz 
+ 3:   aug'-cc-pvdz (without d function in aug-set) 
+ 4:   d'-aug-cc-pvdz (without d function in d-set) 
+ 5:   d-aug-cc-pvdz  
+ 6:   cc-pvtz(10s,5p,2d,1f)->[4s,3p,2d,1f] 
+ 7:   aug'-cc-pvtz (without f function in aug-set) 
+ 8:   aug-cc-pvtz 
+ 9:   d'-aug'-cc-pvtz (without f function in aug- and d-set) 
+ 10:   d''-aug'-cc-pvtz (without f in aug-set and without f and d in d-set) 
+ 11:   cc-pvqz(12s,6p,3d,2f,1g)->[5s,4p,3d,2f,1g] 
+ 12:   cc-pv5z(14s,8p,4d,3f,2g,1h)->[6s,5p,4d,3f,2g,1h] 
+ 13:   diffuse functions for cc-pvdz(1s,1p,1d) 
+ 14:   diffuse functions for cc-pvtz(1s,1p,1d,1f) 
+ 15:   diffuse functions for cc-pvqz(1s,1p,1d,1f,1g) 
+ 16:   diffuse functions for cc-pv5z(1s,1p,1d,1f,1g,1h) 
+ 17:   SV Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s4p)/[3s2p] 
+ 18:   SVP Ahlrichs[3s2p1d] 
+ 19:   DZ Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(8s4p)/[4s2p] 
+ 20:   TZ ahlrichs(10s6p)/[6s3p] 
+ 21:   P Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 additional d-GTO 
+ 22:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s3p)/[3s2p] 
+ 23:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s3p)/[4s2p] 
+ 24:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(9s5p)/[5s3p] 
+ 25:   Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(11s7p)/[6s4p] 
+ 26:   Widmark et al TCA 79(1991)419(14s9p4d3f) (ANO)  
+ 27:   Pierloot et al TCA 90(1995)87(10s6p3d) (ANO) 
+ 28:   CARBON      Pople 3-21g* 
+ 29:   CARBON      Pople 3-21++g* 
+ 30:   CARBON      Pople 6-31g 
+ 31:   CARBON      Pople 6-31g* or 6-31g** 
+ 32:   CARBON      Pople 6-31++g* or 6-31++g** 
+ 33:   CARBON      Pople 6-31++g* or 6-31++g** without p diffuse 
+ 34:   CARBON      Pople 6-31++g* or 6-31++g** without p diffuse, 1 more s diffuse 
+ 35:   CARBON      Pople 6-311g* or 6-311g** 
+ 36:   CARBON      Pople 6-311++g* or 6-311++g** 
+ 37:   C.Pol.Sadlej.10s6p4d.5s3p2d. Coll. Czech. Chem. Commun. 53,1995(1988). 
+ 38:   PAC-ECP basis; Pitzer group; cc-pvdz (4s4p1d}/[3s3p1d]/[2s2p1d] 
+ 39:   Pseudo Basis: Stevens, Basch and Krauss, JCP 81, 6026 (1984). (4s4p)/[2s2p] 
+ 0:    Other library 
+
+Select the basis set for atom C: → Selecting basis for atom: C
+1
+
+Until now you've set the following basis sets:
+ H :: cc-pvdz (4s,1p)->[2s,1p]
+ N :: cc-pvdz(9s,4p,1d)->[3s,2p,1d]
+ C :: cc-pvdz(9s,4p,1d)->[3s,2p,1d]
+ 
+Reorder geom file for geometry optimization and orbital print out? (y)
+y
+
+
+Normal termination of prepinp. See result in inpcol. 
+
+[41;1H[?1049l[23;0;0t[?1l>[41;1H[?1049l[23;0;0t[?1l>Program Iargos
+Argos and Dalton Input Program
+version date 03-oct-01
+
+
+     ******************************************
+     **    PROGRAM:              IARGOS      **
+     **    PROGRAM VERSION:      5.8         **
+     **    DISTRIBUTION VERSION: 5.9.a       **
+     ******************************************
+
+ 
+ 
+ Defaults are in angle brackets <like this>.
+ Alphabetic responses may be abbreviated to as few letters
+   as desired, as long as the choice is still unique.
+ Whenever "PROCEED" is offered as an option,
+   it means to continue to the next item.
+ 
+ Would you like to do an interactive input? <NO> no
+ Do you wish to use spherical basis functions? <YES> 
+ INFO: Using spherical basis functions (l2,lz)
+ NOTE: use the DEFINE option only in conjunction 
+ with the argos integral program!
+ 
+ Use bohrs (a.u.) rather than Angstroms? <YES> 
+ INFO: input of geometry data in bohrs
+ 
+ Writing input files for 
+ DALTON (1)      ARGOS (2)    TURBOCOL (3)
+ enter your choice <1> 
+ libdir   = /usr/local/sw/Columbus/columbus-v7.2.2/Columbus/source/iargos/basis/
+ ptgrplib = /usr/local/sw/Columbus/columbus-v7.2.2/Columbus/source/iargos/ptgrp.hermit
+
+ INFO: for linear molecules, use a 12-fold axis
+ What is the point-group symmetry?  <    >  C2V is a LOW-SYMMETRY point group.
+ The C2 axis is the z axis.                                              
+ The x axis transforms as B1; the y axis transforms as B2.               
+ 
+ There are currently no atoms in the system.
+ 
+ Enter one of the following options:
+   ADD     a set of symmetry-related atoms
+   PROCEED
+   QUIT
+ 
+ Which? <ADD> 
+ Enter the atomic number for this atom: Enter the label for this atom: <N >
+ Enter the Cartesian coordinates for one of these atoms: 
+   --> 
+ The atoms of this type are at coordinates :
+  0.000000000000000E+000  0.000000000000000E+000   2.76463830000000     
+ 
+ Is this correct? <YES> 
+ This atom currently has no basis functions.
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   KEYBOARD: add basis functions from the keyboard
+   PROCEED
+   QUIT
+ 
+ Which? <LIBRARY> 
+ Basis set library:
+ /usr/local/sw/Columbus/columbus-v7.2.2/Columbus/source/iargos/basis/N.bas
+  1:  cc-pvdz(9s,4p,1d)->[3s,2p,1d]                                           
+  2:  aug-cc-pvdz                                                             
+  3:  aug'-cc-pvdz (without d function in aug-set)                            
+  4:  d'-aug-cc-pvdz (without d function in d-set)                            
+  5:  d-aug-cc-pvdz                                                           
+  6:  cc-pvtz(10s,5p,2d,1f)->[4s,3p,2d,1f]                                    
+  7:  aug'-cc-pvtz (without f function in aug-set)                            
+  8:  aug-cc-pvtz                                                             
+  9:  d'-aug'-cc-pvtz (without f function in aug- and d-set)                  
+ 10:  d''-aug'-cc-pvtz (without f in aug-set and without f and d in d-set)    
+ 11:  cc-pvqz(12s,6p,3d,2f,1g)->[5s,4p,3d,2f,1g]                              
+ 12:  cc-pv5z(14s,8p,4d,3f,2g,1h)->[6s,5p,4d,3f,2g,1h]                        
+ 13:  diffuse functions for cc-pvdz(1s,1p,1d)                                 
+ 14:  diffuse functions for cc-pvtz(1s,1p,1d,1f)                              
+ 15:  diffuse functions for cc-pvqz(1s,1p,1d,1f,1g)                           
+ 16:  diffuse functions for cc-pv5z(1s,1p,1d,1f,1g,1h)                        
+ 17:  SV Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(7s4p)/[3s2
+ 18:  SVP Ahlrichs[3s2p1d]                                                    
+ 19:  DZ Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(8s4p)/[4s2
+ 20:  TZ Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(10s6p)/[6s
+ 21:  P Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 additional d-GTO    
+ 22:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(6s3p)[3s2p]           
+ 23:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s3p)[3s2p]           
+ 24:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(8s4p)[3s2p]           
+ 25:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(9s5p)[4s3p]           
+ 26:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(9s5p)[5s3p]           
+ 27:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(11s7p)[6s4p]          
+ 28:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(13s8p)[8s5p]          
+ 29:  Widmark et al TCA 79(1991)419(14s9p4d3f) (ANO)                          
+ 30:  Pierloot et al TCA 90(1995)87(10s6p3d) (ANO)                            
+ 31:  NITROGEN    Pople 3-21g*                                                
+ 32:  NITROGEN    Pople 3-21++g*                                              
+ 33:  NITROGEN    Pople 6-31g                                                 
+ 34:  NITROGEN    Pople 6-31g*  or 6-31g**                                    
+ 35:  NITROGEN    Pople 6-31++g* or 6-31++g**                                 
+ 36:  NITROGEN    Pople 6-311g* or 6-311g**                                   
+ 37:  NITROGEN    Pople 6-311++g* or 6-311++g**                               
+ 38:  PAC-ECP basis; Pitzer group; cc-pvdz (4s4p1d)/[3s2p1d]/[2s2p1d]         
+ 39:  Pseudo Basis: Stevens, Basch and Krauss, JCP 81, 6026 (1984). (4s4p)/[2s
+  0:  Use other library
+ 
+ Which one? <return to menu>
+ 
+ s orbital:
+    9046.000000    0.0007000   -0.0001530    0.0000000
+    1357.000000    0.0053890   -0.0012080    0.0000000
+     309.300000    0.0274060   -0.0059920    0.0000000
+      87.730000    0.1032070   -0.0245440    0.0000000
+      28.560000    0.2787230   -0.0674590    0.0000000
+      10.210000    0.4485400   -0.1580780    0.0000000
+       3.838000    0.2782380   -0.1218310    0.0000000
+       0.746600    0.0154400    0.5490030    0.0000000
+       0.224800   -0.0028640    0.5788150    1.0000000
+ p orbital:
+      13.550000    0.0399190    0.0000000
+       2.917000    0.2171690    0.0000000
+       0.797300    0.5103190    0.0000000
+       0.218500    0.4622140    1.0000000
+ d orbital:
+       0.817000    1.0000000
+ 
+ Is this correct? <YES> 
+ The basis set for this atom now consists of:
+  3 s
+  2 p
+  1 d
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   KEYBOARD: add basis functions from the keyboard
+   EXPORT    basis on this atom to new or existing library
+   VIEW      basis set on this atom
+   DELETE    a contraction set on this atom
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+ 
+ 
+ 
+ The sets of symmetry orbitals on this atom are:
+  1:   s    OK                              
+  2:   p    OK                              
+  3:   d    OK                              
+ 
+ Enter one of the following options:
+   DEFINE prepackaged SOs (includes well-defined angular momentum)
+   VIEW   a set of SOs
+   EDIT   a set of SOs
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+ The system currently consists of the following atoms:
+  1:  N    nuclear chg =  7.    1 atoms    Basis set OK                       
+ 
+ Enter one of the following options:
+   ADD     a set of symmetry-related atoms
+   CHANGE  the coordinates, atomic number, and/or label of a set of atoms
+   BASIS:  Edit the basis on a set of atoms
+   PSEUDO: Edit the pseudopotential on a set of atoms
+   DELETE  a set of atoms
+   VIEW    geometry information
+   CONVERT internal coordinates to cartesian coordinates
+   PROCEED
+   QUIT
+ 
+ Which? <ADD> 
+ Enter the atomic number for this atom: Enter the label for this atom: <C >
+ Enter the Cartesian coordinates for one of these atoms: 
+   --> 
+ The atoms of this type are at coordinates :
+  0.000000000000000E+000  0.000000000000000E+000  -2.44773488000000     
+ 
+ Is this correct? <YES> 
+ This atom currently has no basis functions.
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   OTHER:    add basis functions from another atom in this molecule
+   KEYBOARD: add basis functions from the keyboard
+   PROCEED
+   QUIT
+ 
+ Which? <LIBRARY> 
+ Basis set library:
+ /usr/local/sw/Columbus/columbus-v7.2.2/Columbus/source/iargos/basis/C.bas
+  1:  cc-pvdz(9s,4p,1d)->[3s,2p,1d]                                           
+  2:  aug-cc-pvdz                                                             
+  3:  aug'-cc-pvdz (without d function in aug-set)                            
+  4:  d'-aug-cc-pvdz (without d function in d-set)                            
+  5:  d-aug-cc-pvdz                                                           
+  6:  cc-pvtz(10s,5p,2d,1f)->[4s,3p,2d,1f]                                    
+  7:  aug'-cc-pvtz (without f function in aug-set)                            
+  8:  aug-cc-pvtz                                                             
+  9:  d'-aug'-cc-pvtz (without f function in aug- and d-set)                  
+ 10:  d''-aug'-cc-pvtz (without f in aug-set and without f and d in d-set)    
+ 11:  cc-pvqz(12s,6p,3d,2f,1g)->[5s,4p,3d,2f,1g]                              
+ 12:  cc-pv5z(14s,8p,4d,3f,2g,1h)->[6s,5p,4d,3f,2g,1h]                        
+ 13:  diffuse functions for cc-pvdz(1s,1p,1d)                                 
+ 14:  diffuse functions for cc-pvtz(1s,1p,1d,1f)                              
+ 15:  diffuse functions for cc-pvqz(1s,1p,1d,1f,1g)                           
+ 16:  diffuse functions for cc-pv5z(1s,1p,1d,1f,1g,1h)                        
+ 17:  SV Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s4p)/[3s2p]       
+ 18:  SVP Ahlrichs[3s2p1d]                                                    
+ 19:  DZ Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(8s4p)/[4s2p]       
+ 20:  TZ ahlrichs(10s6p)/[6s3p]                                               
+ 21:  P Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 additional d-GTO    
+ 22:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s3p)/[3s2p]          
+ 23:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s3p)/[4s2p]          
+ 24:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(9s5p)/[5s3p]          
+ 25:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(11s7p)/[6s4p]         
+ 26:  Widmark et al TCA 79(1991)419(14s9p4d3f) (ANO)                          
+ 27:  Pierloot et al TCA 90(1995)87(10s6p3d) (ANO)                            
+ 28:  CARBON      Pople 3-21g*                                                
+ 29:  CARBON      Pople 3-21++g*                                              
+ 30:  CARBON      Pople 6-31g                                                 
+ 31:  CARBON      Pople 6-31g* or 6-31g**                                     
+ 32:  CARBON      Pople 6-31++g* or 6-31++g**                                 
+ 33:  CARBON      Pople 6-31++g* or 6-31++g** without p diffuse               
+ 34:  CARBON      Pople 6-31++g* or 6-31++g** without p diffuse, 1 more s diff
+ 35:  CARBON      Pople 6-311g* or 6-311g**                                   
+ 36:  CARBON      Pople 6-311++g* or 6-311++g**                               
+ 37:  C.Pol.Sadlej.10s6p4d.5s3p2d. Coll. Czech. Chem. Commun. 53,1995(1988).  
+ 38:  PAC-ECP basis; Pitzer group; cc-pvdz (4s4p1d}/[3s3p1d]/[2s2p1d]         
+ 39:  Pseudo Basis: Stevens, Basch and Krauss, JCP 81, 6026 (1984). (4s4p)/[2s
+  0:  Use other library
+ 
+ Which one? <return to menu>
+ 
+ s orbital:
+    6665.000000    0.0006920   -0.0001460    0.0000000
+    1000.000000    0.0053290   -0.0011540    0.0000000
+     228.000000    0.0270770   -0.0057250    0.0000000
+      64.710000    0.1017180   -0.0233120    0.0000000
+      21.060000    0.2747400   -0.0639550    0.0000000
+       7.495000    0.4485640   -0.1499810    0.0000000
+       2.797000    0.2850740   -0.1272620    0.0000000
+       0.521500    0.0152040    0.5445290    0.0000000
+       0.159600   -0.0031910    0.5804960    1.0000000
+ p orbital:
+       9.439000    0.0381090    0.0000000
+       2.002000    0.2094800    0.0000000
+       0.545600    0.5085570    0.0000000
+       0.151700    0.4688420    1.0000000
+ d orbital:
+       0.550000    1.0000000
+ 
+ Is this correct? <YES> 
+ The basis set for this atom now consists of:
+  3 s
+  2 p
+  1 d
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   OTHER:    add basis functions from another atom in this molecule
+   KEYBOARD: add basis functions from the keyboard
+   EXPORT    basis on this atom to new or existing library
+   VIEW      basis set on this atom
+   DELETE    a contraction set on this atom
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+  0.000000000000000E+000  0.000000000000000E+000   2.76463830000000     
+ 
+ 
+  0.000000000000000E+000  0.000000000000000E+000   2.76463830000000     
+ 
+ 
+  0.000000000000000E+000  0.000000000000000E+000   2.76463830000000     
+ 
+ 
+ The sets of symmetry orbitals on this atom are:
+  1:   s    OK                              
+  2:   p    OK                              
+  3:   d    OK                              
+ 
+ Enter one of the following options:
+   DEFINE prepackaged SOs (includes well-defined angular momentum)
+   VIEW   a set of SOs
+   EDIT   a set of SOs
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+ The system currently consists of the following atoms:
+  1:  N    nuclear chg =  7.    1 atoms    Basis set OK                       
+  2:  C    nuclear chg =  6.    1 atoms    Basis set OK                       
+ 
+ Enter one of the following options:
+   ADD     a set of symmetry-related atoms
+   CHANGE  the coordinates, atomic number, and/or label of a set of atoms
+   BASIS:  Edit the basis on a set of atoms
+   PSEUDO: Edit the pseudopotential on a set of atoms
+   DELETE  a set of atoms
+   VIEW    geometry information
+   CONVERT internal coordinates to cartesian coordinates
+   PROCEED
+   QUIT
+ 
+ Which? <ADD> 
+ Enter the atomic number for this atom: Enter the label for this atom: <C >
+ Enter the Cartesian coordinates for one of these atoms: 
+   --> 
+ The atoms of this type are at coordinates :
+  0.000000000000000E+000   2.07546813000000        1.46653955000000     
+  0.000000000000000E+000  -2.07546813000000        1.46653955000000     
+ 
+ Is this correct? <YES> 
+ This atom currently has no basis functions.
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   OTHER:    add basis functions from another atom in this molecule
+   KEYBOARD: add basis functions from the keyboard
+   PROCEED
+   QUIT
+ 
+ Which? <LIBRARY> 
+ Basis set library:
+ /usr/local/sw/Columbus/columbus-v7.2.2/Columbus/source/iargos/basis/C.bas
+  1:  cc-pvdz(9s,4p,1d)->[3s,2p,1d]                                           
+  2:  aug-cc-pvdz                                                             
+  3:  aug'-cc-pvdz (without d function in aug-set)                            
+  4:  d'-aug-cc-pvdz (without d function in d-set)                            
+  5:  d-aug-cc-pvdz                                                           
+  6:  cc-pvtz(10s,5p,2d,1f)->[4s,3p,2d,1f]                                    
+  7:  aug'-cc-pvtz (without f function in aug-set)                            
+  8:  aug-cc-pvtz                                                             
+  9:  d'-aug'-cc-pvtz (without f function in aug- and d-set)                  
+ 10:  d''-aug'-cc-pvtz (without f in aug-set and without f and d in d-set)    
+ 11:  cc-pvqz(12s,6p,3d,2f,1g)->[5s,4p,3d,2f,1g]                              
+ 12:  cc-pv5z(14s,8p,4d,3f,2g,1h)->[6s,5p,4d,3f,2g,1h]                        
+ 13:  diffuse functions for cc-pvdz(1s,1p,1d)                                 
+ 14:  diffuse functions for cc-pvtz(1s,1p,1d,1f)                              
+ 15:  diffuse functions for cc-pvqz(1s,1p,1d,1f,1g)                           
+ 16:  diffuse functions for cc-pv5z(1s,1p,1d,1f,1g,1h)                        
+ 17:  SV Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s4p)/[3s2p]       
+ 18:  SVP Ahlrichs[3s2p1d]                                                    
+ 19:  DZ Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(8s4p)/[4s2p]       
+ 20:  TZ ahlrichs(10s6p)/[6s3p]                                               
+ 21:  P Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 additional d-GTO    
+ 22:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s3p)/[3s2p]          
+ 23:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s3p)/[4s2p]          
+ 24:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(9s5p)/[5s3p]          
+ 25:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(11s7p)/[6s4p]         
+ 26:  Widmark et al TCA 79(1991)419(14s9p4d3f) (ANO)                          
+ 27:  Pierloot et al TCA 90(1995)87(10s6p3d) (ANO)                            
+ 28:  CARBON      Pople 3-21g*                                                
+ 29:  CARBON      Pople 3-21++g*                                              
+ 30:  CARBON      Pople 6-31g                                                 
+ 31:  CARBON      Pople 6-31g* or 6-31g**                                     
+ 32:  CARBON      Pople 6-31++g* or 6-31++g**                                 
+ 33:  CARBON      Pople 6-31++g* or 6-31++g** without p diffuse               
+ 34:  CARBON      Pople 6-31++g* or 6-31++g** without p diffuse, 1 more s diff
+ 35:  CARBON      Pople 6-311g* or 6-311g**                                   
+ 36:  CARBON      Pople 6-311++g* or 6-311++g**                               
+ 37:  C.Pol.Sadlej.10s6p4d.5s3p2d. Coll. Czech. Chem. Commun. 53,1995(1988).  
+ 38:  PAC-ECP basis; Pitzer group; cc-pvdz (4s4p1d}/[3s3p1d]/[2s2p1d]         
+ 39:  Pseudo Basis: Stevens, Basch and Krauss, JCP 81, 6026 (1984). (4s4p)/[2s
+  0:  Use other library
+ 
+ Which one? <return to menu>
+ 
+ s orbital:
+    6665.000000    0.0006920   -0.0001460    0.0000000
+    1000.000000    0.0053290   -0.0011540    0.0000000
+     228.000000    0.0270770   -0.0057250    0.0000000
+      64.710000    0.1017180   -0.0233120    0.0000000
+      21.060000    0.2747400   -0.0639550    0.0000000
+       7.495000    0.4485640   -0.1499810    0.0000000
+       2.797000    0.2850740   -0.1272620    0.0000000
+       0.521500    0.0152040    0.5445290    0.0000000
+       0.159600   -0.0031910    0.5804960    1.0000000
+ p orbital:
+       9.439000    0.0381090    0.0000000
+       2.002000    0.2094800    0.0000000
+       0.545600    0.5085570    0.0000000
+       0.151700    0.4688420    1.0000000
+ d orbital:
+       0.550000    1.0000000
+ 
+ Is this correct? <YES> 
+ The basis set for this atom now consists of:
+  3 s
+  2 p
+  1 d
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   OTHER:    add basis functions from another atom in this molecule
+   KEYBOARD: add basis functions from the keyboard
+   EXPORT    basis on this atom to new or existing library
+   VIEW      basis set on this atom
+   DELETE    a contraction set on this atom
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+ 
+ 
+ 
+ The sets of symmetry orbitals on this atom are:
+  1:   s    OK                              
+  2:   p    OK                              
+  3:   d    OK                              
+ 
+ Enter one of the following options:
+   DEFINE prepackaged SOs (includes well-defined angular momentum)
+   VIEW   a set of SOs
+   EDIT   a set of SOs
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+ The system currently consists of the following atoms:
+  1:  N    nuclear chg =  7.    1 atoms    Basis set OK                       
+  2:  C    nuclear chg =  6.    1 atoms    Basis set OK                       
+  3:  C    nuclear chg =  6.    2 atoms    Basis set OK                       
+ 
+ Enter one of the following options:
+   ADD     a set of symmetry-related atoms
+   CHANGE  the coordinates, atomic number, and/or label of a set of atoms
+   BASIS:  Edit the basis on a set of atoms
+   PSEUDO: Edit the pseudopotential on a set of atoms
+   DELETE  a set of atoms
+   VIEW    geometry information
+   CONVERT internal coordinates to cartesian coordinates
+   PROCEED
+   QUIT
+ 
+ Which? <ADD> 
+ Enter the atomic number for this atom: Enter the label for this atom: <C >
+ Enter the Cartesian coordinates for one of these atoms: 
+   --> 
+ The atoms of this type are at coordinates :
+  0.000000000000000E+000   2.28061121000000       -1.13396652000000     
+  0.000000000000000E+000  -2.28061121000000       -1.13396652000000     
+ 
+ Is this correct? <YES> 
+ This atom currently has no basis functions.
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   OTHER:    add basis functions from another atom in this molecule
+   KEYBOARD: add basis functions from the keyboard
+   PROCEED
+   QUIT
+ 
+ Which? <LIBRARY> 
+ Basis set library:
+ /usr/local/sw/Columbus/columbus-v7.2.2/Columbus/source/iargos/basis/C.bas
+  1:  cc-pvdz(9s,4p,1d)->[3s,2p,1d]                                           
+  2:  aug-cc-pvdz                                                             
+  3:  aug'-cc-pvdz (without d function in aug-set)                            
+  4:  d'-aug-cc-pvdz (without d function in d-set)                            
+  5:  d-aug-cc-pvdz                                                           
+  6:  cc-pvtz(10s,5p,2d,1f)->[4s,3p,2d,1f]                                    
+  7:  aug'-cc-pvtz (without f function in aug-set)                            
+  8:  aug-cc-pvtz                                                             
+  9:  d'-aug'-cc-pvtz (without f function in aug- and d-set)                  
+ 10:  d''-aug'-cc-pvtz (without f in aug-set and without f and d in d-set)    
+ 11:  cc-pvqz(12s,6p,3d,2f,1g)->[5s,4p,3d,2f,1g]                              
+ 12:  cc-pv5z(14s,8p,4d,3f,2g,1h)->[6s,5p,4d,3f,2g,1h]                        
+ 13:  diffuse functions for cc-pvdz(1s,1p,1d)                                 
+ 14:  diffuse functions for cc-pvtz(1s,1p,1d,1f)                              
+ 15:  diffuse functions for cc-pvqz(1s,1p,1d,1f,1g)                           
+ 16:  diffuse functions for cc-pv5z(1s,1p,1d,1f,1g,1h)                        
+ 17:  SV Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s4p)/[3s2p]       
+ 18:  SVP Ahlrichs[3s2p1d]                                                    
+ 19:  DZ Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(8s4p)/[4s2p]       
+ 20:  TZ ahlrichs(10s6p)/[6s3p]                                               
+ 21:  P Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 additional d-GTO    
+ 22:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s3p)/[3s2p]          
+ 23:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(7s3p)/[4s2p]          
+ 24:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(9s5p)/[5s3p]          
+ 25:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(11s7p)/[6s4p]         
+ 26:  Widmark et al TCA 79(1991)419(14s9p4d3f) (ANO)                          
+ 27:  Pierloot et al TCA 90(1995)87(10s6p3d) (ANO)                            
+ 28:  CARBON      Pople 3-21g*                                                
+ 29:  CARBON      Pople 3-21++g*                                              
+ 30:  CARBON      Pople 6-31g                                                 
+ 31:  CARBON      Pople 6-31g* or 6-31g**                                     
+ 32:  CARBON      Pople 6-31++g* or 6-31++g**                                 
+ 33:  CARBON      Pople 6-31++g* or 6-31++g** without p diffuse               
+ 34:  CARBON      Pople 6-31++g* or 6-31++g** without p diffuse, 1 more s diff
+ 35:  CARBON      Pople 6-311g* or 6-311g**                                   
+ 36:  CARBON      Pople 6-311++g* or 6-311++g**                               
+ 37:  C.Pol.Sadlej.10s6p4d.5s3p2d. Coll. Czech. Chem. Commun. 53,1995(1988).  
+ 38:  PAC-ECP basis; Pitzer group; cc-pvdz (4s4p1d}/[3s3p1d]/[2s2p1d]         
+ 39:  Pseudo Basis: Stevens, Basch and Krauss, JCP 81, 6026 (1984). (4s4p)/[2s
+  0:  Use other library
+ 
+ Which one? <return to menu>
+ 
+ s orbital:
+    6665.000000    0.0006920   -0.0001460    0.0000000
+    1000.000000    0.0053290   -0.0011540    0.0000000
+     228.000000    0.0270770   -0.0057250    0.0000000
+      64.710000    0.1017180   -0.0233120    0.0000000
+      21.060000    0.2747400   -0.0639550    0.0000000
+       7.495000    0.4485640   -0.1499810    0.0000000
+       2.797000    0.2850740   -0.1272620    0.0000000
+       0.521500    0.0152040    0.5445290    0.0000000
+       0.159600   -0.0031910    0.5804960    1.0000000
+ p orbital:
+       9.439000    0.0381090    0.0000000
+       2.002000    0.2094800    0.0000000
+       0.545600    0.5085570    0.0000000
+       0.151700    0.4688420    1.0000000
+ d orbital:
+       0.550000    1.0000000
+ 
+ Is this correct? <YES> 
+ The basis set for this atom now consists of:
+  3 s
+  2 p
+  1 d
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   OTHER:    add basis functions from another atom in this molecule
+   KEYBOARD: add basis functions from the keyboard
+   EXPORT    basis on this atom to new or existing library
+   VIEW      basis set on this atom
+   DELETE    a contraction set on this atom
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+  0.000000000000000E+000   2.07546813000000        1.46653955000000     
+  0.000000000000000E+000  -2.07546813000000        1.46653955000000     
+ 
+ 
+  0.000000000000000E+000   2.07546813000000        1.46653955000000     
+  0.000000000000000E+000  -2.07546813000000        1.46653955000000     
+ 
+ 
+  0.000000000000000E+000   2.07546813000000        1.46653955000000     
+  0.000000000000000E+000  -2.07546813000000        1.46653955000000     
+ 
+ 
+ The sets of symmetry orbitals on this atom are:
+  1:   s    OK                              
+  2:   p    OK                              
+  3:   d    OK                              
+ 
+ Enter one of the following options:
+   DEFINE prepackaged SOs (includes well-defined angular momentum)
+   VIEW   a set of SOs
+   EDIT   a set of SOs
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+ The system currently consists of the following atoms:
+  1:  N    nuclear chg =  7.    1 atoms    Basis set OK                       
+  2:  C    nuclear chg =  6.    1 atoms    Basis set OK                       
+  3:  C    nuclear chg =  6.    2 atoms    Basis set OK                       
+  4:  C    nuclear chg =  6.    2 atoms    Basis set OK                       
+ 
+ Enter one of the following options:
+   ADD     a set of symmetry-related atoms
+   CHANGE  the coordinates, atomic number, and/or label of a set of atoms
+   BASIS:  Edit the basis on a set of atoms
+   PSEUDO: Edit the pseudopotential on a set of atoms
+   DELETE  a set of atoms
+   VIEW    geometry information
+   CONVERT internal coordinates to cartesian coordinates
+   PROCEED
+   QUIT
+ 
+ Which? <ADD> 
+ Enter the atomic number for this atom: Enter the label for this atom: <H >
+ Enter the Cartesian coordinates for one of these atoms: 
+   --> 
+ The atoms of this type are at coordinates :
+  0.000000000000000E+000  0.000000000000000E+000  -4.49406909000000     
+ 
+ Is this correct? <YES> 
+ This atom currently has no basis functions.
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   OTHER:    add basis functions from another atom in this molecule
+   KEYBOARD: add basis functions from the keyboard
+   PROCEED
+   QUIT
+ 
+ Which? <LIBRARY> 
+ Basis set library:
+ /usr/local/sw/Columbus/columbus-v7.2.2/Columbus/source/iargos/basis/H.bas
+  1:  cc-pvdz (4s,1p)->[2s,1p]                                                
+  2:  cc-(p)vdz (4s)->[2s] (without p on H)                                   
+  3:  aug-cc-pvdz                                                             
+  4:  aug'-cc-pvdz (without p function in aug-set)                            
+  5:  d'-aug-cc-pvdz (without p function in d-set)                            
+  6:  d-aug-cc-pvdz                                                           
+  7:  cc-pvtz(5s,2p,1d)->[3s,2p,1d]                                           
+  8:  aug'-cc-pvtz (without d function in aug-set)                            
+  9:  aug-cc-pvtz                                                             
+ 10:  d'-aug'-cc-pvtz (without d function in aug- and d-set)                  
+ 11:  d''-aug'-cc-pvtz (without d in aug-set and without p and d in d-set)    
+ 12:  aug-cc-pvtz(-d) (without any d functions)                               
+ 13:  cc-pvqz(6s,3p,2d,1f)->[4s,3p,2d,1f]                                     
+ 14:  cc-pv5z(8s,4p,3d,2f,1g)->[5s,4p,3d,2f,1g]                               
+ 15:  diffuse functions for cc-pvdz(1s,1p)                                    
+ 16:  diffuse functions for cc-pvtz(1s,1p,1d)                                 
+ 17:  diffuse functions for cc-pvqz(1s,1p,1d,1f)                              
+ 18:  diffuse functions for cc-pv5z(1s,1p,1d,1f,1g)                           
+ 19:  SV Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(4s)/[2s]  
+ 20:  TZ Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(5s)/[3s]  
+ 21:  P Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 additional p-GTO    
+ 22:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(6s)[3s]               
+ 23:  Widmark et al TCA 79(1991)419(8s4p3d) (ANO)                             
+ 24:  Pierloot et al TCA 90(1995)87(7s3p) (ANO)                               
+ 25:  HYDROGEN    Pople 3-21g*                                                
+ 26:  HYDROGEN    Pople 3-21++g*                                              
+ 27:  HYDROGEN    Pople 6-31g or 6-31g*                                       
+ 28:  HYDROGEN    Pople 6-31g**                                               
+ 29:  HYDROGEN    Pople 6-31++g**                                             
+ 30:  HYDROGEN    Pople 6-311g*                                               
+ 31:  HYDROGEN    Pople 6-311g**                                              
+ 32:  HYDROGEN    Pople 6-311++g**                                            
+ 33:  H.Pol.Sadlej.6s4p.3s2p                                                  
+  0:  Use other library
+ 
+ Which one? <return to menu>
+ 
+ s orbital:
+      13.010000    0.0196850    0.0000000
+       1.962000    0.1379770    0.0000000
+       0.444600    0.4781480    0.0000000
+       0.122000    0.5012400    1.0000000
+ p orbital:
+       0.727000    1.0000000
+ 
+ Is this correct? <YES> 
+ The basis set for this atom now consists of:
+  2 s
+  1 p
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   OTHER:    add basis functions from another atom in this molecule
+   KEYBOARD: add basis functions from the keyboard
+   EXPORT    basis on this atom to new or existing library
+   VIEW      basis set on this atom
+   DELETE    a contraction set on this atom
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+  0.000000000000000E+000  0.000000000000000E+000   2.76463830000000     
+  0.000000000000000E+000  0.000000000000000E+000  -2.44773488000000     
+ 
+ 
+  0.000000000000000E+000  0.000000000000000E+000   2.76463830000000     
+  0.000000000000000E+000  0.000000000000000E+000  -2.44773488000000     
+ 
+ 
+ The sets of symmetry orbitals on this atom are:
+  1:   s    OK                              
+  2:   p    OK                              
+ 
+ Enter one of the following options:
+   DEFINE prepackaged SOs (includes well-defined angular momentum)
+   VIEW   a set of SOs
+   EDIT   a set of SOs
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+ The system currently consists of the following atoms:
+  1:  N    nuclear chg =  7.    1 atoms    Basis set OK                       
+  2:  C    nuclear chg =  6.    1 atoms    Basis set OK                       
+  3:  C    nuclear chg =  6.    2 atoms    Basis set OK                       
+  4:  C    nuclear chg =  6.    2 atoms    Basis set OK                       
+  5:  H    nuclear chg =  1.    1 atoms    Basis set OK                       
+ 
+ Enter one of the following options:
+   ADD     a set of symmetry-related atoms
+   CHANGE  the coordinates, atomic number, and/or label of a set of atoms
+   BASIS:  Edit the basis on a set of atoms
+   PSEUDO: Edit the pseudopotential on a set of atoms
+   DELETE  a set of atoms
+   VIEW    geometry information
+   CONVERT internal coordinates to cartesian coordinates
+   PROCEED
+   QUIT
+ 
+ Which? <ADD> 
+ Enter the atomic number for this atom: Enter the label for this atom: <H >
+ Enter the Cartesian coordinates for one of these atoms: 
+   --> 
+ The atoms of this type are at coordinates :
+  0.000000000000000E+000   4.08636430000000       -2.08142644000000     
+  0.000000000000000E+000  -4.08636430000000       -2.08142644000000     
+ 
+ Is this correct? <YES> 
+ This atom currently has no basis functions.
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   OTHER:    add basis functions from another atom in this molecule
+   KEYBOARD: add basis functions from the keyboard
+   PROCEED
+   QUIT
+ 
+ Which? <LIBRARY> 
+ Basis set library:
+ /usr/local/sw/Columbus/columbus-v7.2.2/Columbus/source/iargos/basis/H.bas
+  1:  cc-pvdz (4s,1p)->[2s,1p]                                                
+  2:  cc-(p)vdz (4s)->[2s] (without p on H)                                   
+  3:  aug-cc-pvdz                                                             
+  4:  aug'-cc-pvdz (without p function in aug-set)                            
+  5:  d'-aug-cc-pvdz (without p function in d-set)                            
+  6:  d-aug-cc-pvdz                                                           
+  7:  cc-pvtz(5s,2p,1d)->[3s,2p,1d]                                           
+  8:  aug'-cc-pvtz (without d function in aug-set)                            
+  9:  aug-cc-pvtz                                                             
+ 10:  d'-aug'-cc-pvtz (without d function in aug- and d-set)                  
+ 11:  d''-aug'-cc-pvtz (without d in aug-set and without p and d in d-set)    
+ 12:  aug-cc-pvtz(-d) (without any d functions)                               
+ 13:  cc-pvqz(6s,3p,2d,1f)->[4s,3p,2d,1f]                                     
+ 14:  cc-pv5z(8s,4p,3d,2f,1g)->[5s,4p,3d,2f,1g]                               
+ 15:  diffuse functions for cc-pvdz(1s,1p)                                    
+ 16:  diffuse functions for cc-pvtz(1s,1p,1d)                                 
+ 17:  diffuse functions for cc-pvqz(1s,1p,1d,1f)                              
+ 18:  diffuse functions for cc-pv5z(1s,1p,1d,1f,1g)                           
+ 19:  SV Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(4s)/[2s]  
+ 20:  TZ Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 ahlrichs(5s)/[3s]  
+ 21:  P Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829 additional p-GTO    
+ 22:  Schaefer et al JCP 97(1992)2571 JCP 100(1994)5829(6s)[3s]               
+ 23:  Widmark et al TCA 79(1991)419(8s4p3d) (ANO)                             
+ 24:  Pierloot et al TCA 90(1995)87(7s3p) (ANO)                               
+ 25:  HYDROGEN    Pople 3-21g*                                                
+ 26:  HYDROGEN    Pople 3-21++g*                                              
+ 27:  HYDROGEN    Pople 6-31g or 6-31g*                                       
+ 28:  HYDROGEN    Pople 6-31g**                                               
+ 29:  HYDROGEN    Pople 6-31++g**                                             
+ 30:  HYDROGEN    Pople 6-311g*                                               
+ 31:  HYDROGEN    Pople 6-311g**                                              
+ 32:  HYDROGEN    Pople 6-311++g**                                            
+ 33:  H.Pol.Sadlej.6s4p.3s2p                                                  
+  0:  Use other library
+ 
+ Which one? <return to menu>
+ 
+ s orbital:
+      13.010000    0.0196850    0.0000000
+       1.962000    0.1379770    0.0000000
+       0.444600    0.4781480    0.0000000
+       0.122000    0.5012400    1.0000000
+ p orbital:
+       0.727000    1.0000000
+ 
+ Is this correct? <YES> 
+ The basis set for this atom now consists of:
+  2 s
+  1 p
+ 
+ Enter one of the following options:
+   LIBRARY:  add basis functions to this atom from a library
+   OTHER:    add basis functions from another atom in this molecule
+   KEYBOARD: add basis functions from the keyboard
+   EXPORT    basis on this atom to new or existing library
+   VIEW      basis set on this atom
+   DELETE    a contraction set on this atom
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+  0.000000000000000E+000   2.07546813000000        1.46653955000000     
+  0.000000000000000E+000  -2.07546813000000        1.46653955000000     
+  0.000000000000000E+000   2.28061121000000       -1.13396652000000     
+  0.000000000000000E+000  -2.28061121000000       -1.13396652000000     
+ 
+ 
+  0.000000000000000E+000   2.07546813000000        1.46653955000000     
+  0.000000000000000E+000  -2.07546813000000        1.46653955000000     
+  0.000000000000000E+000   2.28061121000000       -1.13396652000000     
+  0.000000000000000E+000  -2.28061121000000       -1.13396652000000     
+ 
+ 
+ The sets of symmetry orbitals on this atom are:
+  1:   s    OK                              
+  2:   p    OK                              
+ 
+ Enter one of the following options:
+   DEFINE prepackaged SOs (includes well-defined angular momentum)
+   VIEW   a set of SOs
+   EDIT   a set of SOs
+   PROCEED
+   QUIT
+ 
+ Which? <PROCEED> 
+ The system currently consists of the following atoms:
+  1:  N    nuclear chg =  7.    1 atoms    Basis set OK                       
+  2:  C    nuclear chg =  6.    1 atoms    Basis set OK                       
+  3:  C    nuclear chg =  6.    2 atoms    Basis set OK                       
+  4:  C    nuclear chg =  6.    2 atoms    Basis set OK                       
+  5:  H    nuclear chg =  1.    1 atoms    Basis set OK                       
+  6:  H    nuclear chg =  1.    2 atoms    Basis set OK                       
+ 
+ Enter one of the following options:
+   ADD     a set of symmetry-related atoms
+   CHANGE  the coordinates, atomic number, and/or label of a set of atoms
+   BASIS:  Edit the basis on a set of atoms
+   PSEUDO: Edit the pseudopotential on a set of atoms
+   DELETE  a set of atoms
+   VIEW    geometry information
+   CONVERT internal coordinates to cartesian coordinates
+   PROCEED
+   QUIT
+ 
+ Which? <ADD> 
+ 
+ The orbitals are organized by symmetry in the following way:
+ 
+ Argos ordering of irreps:
+
+ Irrep     # of orbitals
+   A1             41
+   A2             11
+   B1             16
+   B2             31
+ 
+ Is EVERYTHING now correct? <YES>  Reorder atoms for geometry optimization? <YES> 
+ Writing geometry information on geom ... 
+Dalton ordering of irreps:
+
+Irrep     # of orbitals
+  a1             41
+  b1             16
+  b2             31
+  a2             11
+ writing daltcomm and daltaoin...
+ 
+ the files geom, infofl.hermit, daltaoin, and daltcomm have been written
+ 
+[?1049h[22;0;0t[1;41r(B[m[4l[?7h[H[2J[1;27H(B[0;7mCOLUMBUS INPUT FACILITY [3;31H(B[mmain menu options
+
+->   1) Integral program input (for argos/dalton/turbocol/molcas)
+[6G2) SCF input
+[6G3) MCSCF input
+[6G4) CI input
+[6G5) Set up job control
+[6G6) Utilities
+[6G7) Exit the input facility[39;28H(B[0;7mVersion 7.2, 2022-09 fp
+
+(All) (B[m h)elp ?)item-help q)uit u)p b)egin e)nd r)efresh[5;3H
+->[A  [1K
+[H[2J[41;1H[?1049l[23;0;0t[?1l>
+
+     ******************************************
+     **    PROGRAM:              MAKSCF      **
+     **    PROGRAM VERSION:      5.5.1       **
+     **    DISTRIBUTION VERSION: 5.9.a       **
+     ******************************************
+
+
+ Symmetry orbital summary:
+
+ Molecular symmetry group:  c2v 
+ Symm.blocks:         1     2     3     4
+ Symm.labels:         a1    b1    b2    a2 
+ Number of basis
+  functions:          41    16    31    11
+ 
+ Do you want a closed shell calculation ? <YES> no
+ 
+ Input the no. of doubly occupied orbitals for each irrep, DOCC:
+10 2 6 1
+ 
+ Input the no. of open shell orbitals for each irrep, OPSH:
+1 0 1 0
+
+
+ The orbital occupation is:
+
+       a1  b1  b2  a2
+ DOCC   10   2   6   1
+ OPSH    1   0   1   0
+ 
+ Is this correct? <YES> yes
+
+ There are   2 open shell orbitals.
+ 
+ Would you like the high spin case? <YES> → Detected high-spin prompt. Sending yes
+yes
+ You specified a triplet.
+ 
+ Would you like to change the default program parameters? <NO> no
+  Input a title: <Default SCF Title>
+ --> 
+[?1049h[22;0;0t[1;41r(B[m[4l[?7h[H[2J[1;27H(B[0;7mCOLUMBUS INPUT FACILITY [3;31H(B[mmain menu options
+
+[6G1) Integral program input (for argos/dalton/turbocol/molcas)
+->   2) SCF input
+[6G3) MCSCF input
+[6G4) CI input
+[6G5) Set up job control
+[6G6) Utilities
+[6G7) Exit the input facility[39;28H(B[0;7mVersion 7.2, 2022-09 fp
+
+(All) (B[m h)elp ?)item-help q)uit u)p b)egin e)nd r)efresh[6;3H
+->[A  [1K
+[H[2J[41;1H[?1049l[23;0;0t[?1l>[?1049h[22;0;0t[1;41r(B[m[4l[?7h[H[2JMCSCF WAVE FUNCTION DEFINITION
+==============================
+(for an explanation see the COLUMBUS documentation and tutorial)[9dFreeze orbitals prior to MCSCF (no gradients available) [y|n]	n[Z[Jprepare input for no(0), CI(1), MCSCF(2), SA-MCSCF(3) analytical gradient
+1[J[AEnter number of DRTS [1-8][K[32G1[K[18dnumber of electrons for DRT #1 (nucl. charge: 40)   40[7dDRT1: #electrons:40[18dmultiplicity for DRT #1[K	  3[7;21Hmult:3[18dspatial symmetry for DRT #1   3[7;29Hsym:b2[18dexcitation level (cas,ras)->aux	  [18;18Hras->(cas,aux)	  [7;36Hexc:
+
+count order (bottom to top): DOCC - RAS  - CAS - AUX
+irreps[10;16Ha1    b1    b2    a2
+# basis fcts   41    16    31    11[18dnumber of doubly occupied orbitals per irrep   10 0 6 0[13ddocc[13;16H10    0     6     0[18;11HCAS orbitals per irrep[K   1 4 1 2[15dcas[15;16H1     4     1     2
+
+
+[K
+
+Apply add. group restrictions for DRT 1 [y|n]	n[Z[J[3;41H100[3;57H50 		300[4;41H1.e-5[4;57H1.e-5[70G1.e-8[6;52Hn[7;59Hy[8;51Hy[8;66H5
+[63G1.e-3[11;39HNO[11;50HNO[11;61HNO[13;43H1[13;55H1[14;65HN[Z[H[2J
+   Convergence
+[7G1. Iterations[3;34H#iter [100]    #miter [50 ]   #ciiter [300][4;7H2. Thresholds[4;34Hknorm [1.e-5 ]  wnorm [1.e-5 ]  DE [1.e-8 ][6;7H3. HMC-matrix[6;34Hbuild explicitly [n][7;34Hdiagonalize iteratively [y]
+[7G4. Miscellaneous[8;34Hquadratic cnvg. [y] from #iter [5  ][9;40H... only with wnorm < [1.e-3 ]
+
+   Resolution (NO)[11;34HRAS [NO  ] CAS [NO  ] AUX [NO  ]
+  State-averaging[13;27HDRT 1: #states [1 ] weights[1[75G][14;19Htransition moments / non-adiabatic couplings [N][16;30HFINISHED [ ]
+
+   Editing: left/right, 'delete'; Switching fields: 'Tab', up/down
+   Help is available through selecting a field and pressing 'return'.
+   Indicate completion by selecting 'Finished' and pressing 'return'. [3;43H[39;4HSelect a MR-SDCI calculation
+   corresponds to NTYPE=0[3;43H[3;59H		30[4;46H[4;62H		-8[6;52H[7;59H[8;51H[8;67H
+3[11;41H[11;52H[11;63H[13;44H[13;56H[14;65H[16;40H[H[2J
+   Convergence
+[7G1. Iterations[3;34H#iter [100]    #miter [50 ]   #ciiter [300][4;7H2. Thresholds[4;34Hknorm [1.e-5 ]  wnorm [1.e-5 ]  DE [1.e-8 ][6;7H3. HMC-matrix[6;34Hbuild explicitly [n][7;34Hdiagonalize iteratively [y]
+[7G4. Miscellaneous[8;34Hquadratic cnvg. [y] from #iter [5  ][9;40H... only with wnorm < [1.e-3 ]
+
+   Resolution (NO)[11;34HRAS [NO  ] CAS [NO  ] AUX [NO  ]
+  State-averaging[13;27HDRT 1: #states [1 ] weights[1[75G][14;19Htransition moments / non-adiabatic couplings [N][16;30HFINISHED [ ]
+
+   Editing: left/right, 'delete'; Switching fields: 'Tab', up/down
+   Help is available through selecting a field and pressing 'return'.
+   Indicate completion by selecting 'Finished' and pressing 'return'.[39;4HSelect a MR-SDCI calculation
+   corresponds to NTYPE=0[16;40HY[39d[J[H[H[2J[41;1H[?1049l[23;0;0t[?1l>[?1049h[22;0;0t[1;41r(B[m[4l[?7h[H[2J[1;27H(B[0;7mCOLUMBUS INPUT FACILITY [3;31H(B[mmain menu options
+
+[6G1) Integral program input (for argos/dalton/turbocol/molcas)
+[6G2) SCF input
+->   3) MCSCF input
+[6G4) CI input
+[6G5) Set up job control
+[6G6) Utilities
+[6G7) Exit the input facility[39;28H(B[0;7mVersion 7.2, 2022-09 fp
+
+(All) (B[m h)elp ?)item-help q)uit u)p b)egin e)nd r)efresh[7;3H
+
+->[7d  [1K
+
+[H[2J[H[2J[1;27H(B[0;7mCOLUMBUS INPUT FACILITY [3;24H(B[msubmenu 1: type of calculation
+
+[6G1) Job control for single point or gradient calculation
+[6G2) Potential energy curve for one int. coordinate
+[6G3) Vibrational frequencies and force constants
+->   4) Exit[39;28H(B[0;7mVersion 7.2, 2022-09 fp
+
+(All) (B[m h)elp ?)item-help q)uit u)p b)egin e)nd r)efresh[8;3H[5d->
+
+
+  [1K[5d[H[2J[H[2J[1;27H(B[0;7mCOLUMBUS INPUT FACILITY [3;24H(B[msubmenu 1.1: job control setup
+
+->   1) single point calculation
+[6G2) geometry optimization with GDIIS
+[6G3) geometry optimization with SLAPAF
+[6G4) saddle point calculation (local search - GDIIS)
+[6G5) stationary point calculation (global search - RGF)
+[6G6) optimization on the crossing seam or ISC (GDIIS)
+[6G7) optimization on the crossing seam (POLYHES)
+[6G8) Exit[39;28H(B[0;7mVersion 7.2, 2022-09 fp
+
+(All) (B[m h)elp ?)item-help q)uit u)p b)egin e)nd r)efresh[5;3H
+->[A  [1K
+[H[2J
+[7GInternal coordinates generated!
+[4;20HPress return to continue
+
+[19;20H(0[0ml(B-------------------------------------(0[0mk(B[20;20H(0[0m(B|Enter the number of optim. cycles:   |[21;20H(0[0mm(B-------------------------------------(0[0mj(B[20;55H(0[0m(B10[H[2J
+[7GInternal coordinates generated![4;20HPress return to continue[19;20H(0[0ml(B-------------------------------------(0[0mk(B[20;20H(0[0m(B|Enter the number of optim. cycles:   |[21;20H(0[0mm(B-------------------------------------(0[0mj(B[20;55H(0[0m(B[H[2J
+[7GInternal coordinates generated![4;20HPress return to continue[19;20H[6d[H[2J[1;27H(B[0;7mCOLUMBUS INPUT FACILITY [3;21H(B[msubmenu 1.2.1: optimization options
+
+->   1) (Done with selections)
+[6G2) [ ] mcscf gradient (single state)
+[6G3) [ ] gradient for state averaged mcscf
+[6G4) [ ] ci gradient
+[6G5) [ ] one electron properties
+[6G6) [ ] convert MOs into molden proprietary format
+[6G7) [ ] fix one or more coordiante in optimization
+[6G8) [ ] activate CI restart after 2-nd geomopt. iter.[39;28H(B[0;7mVersion 7.2, 2022-09 fp
+
+(All) (B[m h)elp ?)item-help q)uit u)p a)ll m)atch c)lear b)egin e)nd r)efresh[5;3H
+->[A  [1K
+	[X->
+
+
+
+->[6d  [1K
+
+
+
+	[X->[5d->[10d  [1K[5d[H[2Jstarting orbitals from scf prior to mcscf? (y|n) y
+[H[2J[1;27H(B[0;7mCOLUMBUS INPUT FACILITY [3;24H(B[msubmenu 1: type of calculation
+
+[6G1) Job control for single point or gradient calculation
+->   2) Potential energy curve for one int. coordinate
+[6G3) Vibrational frequencies and force constants
+[6G4) Exit[39;28H(B[0;7mVersion 7.2, 2022-09 fp
+
+(All) (B[m h)elp ?)item-help q)uit u)p b)egin e)nd r)efresh[6;3H
+
+->[6d  [1K
+
+[H[2J[H[2J[1;27H(B[0;7mCOLUMBUS INPUT FACILITY [3;31H(B[mmain menu options
+
+[6G1) Integral program input (for argos/dalton/turbocol/molcas)
+[6G2) SCF input
+[6G3) MCSCF input
+->   4) CI input
+[6G5) Set up job control
+[6G6) Utilities
+[6G7) Exit the input facility[39;28H(B[0;7mVersion 7.2, 2022-09 fp
+
+(All) (B[m h)elp ?)item-help q)uit u)p b)egin e)nd r)efresh[8;3H
+
+
+->[8d  [1K
+
+
+[H[2J[41;1H[?1049l[23;0;0t[?1l>Running Columbus runc...
+runc PID: 1392056
+runc finished.
+ran with mem 4000
+⏩ Skipping CISD stage.
+⏩ Skipping AQCC stage.
+🎉 All selected stages completed successfully.

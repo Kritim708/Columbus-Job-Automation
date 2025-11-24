@@ -1,0 +1,24 @@
+calculation_set=1
+run_parallel=n
+use_slurm=no
+slurm_path=
+
+# Singlet settings
+run_mcscf_singlet=no
+run_cisd_singlet=no
+run_aqcc_singlet=no
+
+mcscf_mem_singlet=4000
+cisd_mem_singlet=4000
+aqcc_mem_singlet=4000
+
+# Triplet settings
+run_mcscf_triplet=y
+run_cisd_triplet=n
+run_aqcc_triplet=n
+
+mcscf_mem_triplet=4000
+cisd_mem_triplet=4000
+aqcc_mem_triplet=4000
+
+COLUMBUS=/usr/local/sw/Columbus/columbus-v7.2.2/Columbus

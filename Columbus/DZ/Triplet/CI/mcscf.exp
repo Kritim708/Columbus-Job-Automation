@@ -1,0 +1,356 @@
+#!/usr/bin/expect -f
+
+set timeout -1
+
+
+
+#==============================
+# Read input values from file
+#==============================
+
+# Path to input file
+set input_file "input_values.txt"
+
+# Source the file to load all "set var value" lines as Tcl variables
+# The file must be in proper Tcl format like:
+# set var_name value
+source $input_file
+
+
+
+#===========================
+# STARTING COLINP
+#===========================
+spawn /usr/local/columbus722/colinp
+
+# Step 1: Main menu
+expect {
+    "main menu options" {
+        send "1\r"
+    }
+}
+
+# Step 2: Run prepinp
+expect {
+    "Run the preparation program (prepinp)? (y|n)" {
+        send "y\r"
+    }
+}
+
+# Step 3: Input for DALTON or MOLCAS
+expect {
+    "Input for DALTON (1) or MOLCAS (2):" {
+        send "1\r"
+    }
+}
+
+# Step 4: Pause here to allow user input for point group symmetry
+expect {
+    "Enter the point group symmetry:" {
+         send "$group_symmetry\r"
+    }
+}
+
+# Step 5: After user enters value and presses Enter, resume
+expect {
+    "Name of the file containing the cartesian coordinates" {
+        send "geom\r"
+    }
+}
+
+sleep 0.5
+send "\r"
+
+
+
+# Send the key the number of times equal to unique atoms
+# Loop through each unique atom prompt
+for {set i 0} {$i < $num_unique_atoms} {incr i} {
+
+    # Wait for the prompt line like: "Select the basis set for atom S:"
+    expect {
+        -re {Select the basis set for atom ([A-Za-z]+):} {
+            set atom $expect_out(1,string)
+            send_user "→ Selecting basis for atom: $atom\n"
+
+            # Default key to send
+            set send_key $calculation_set
+
+            # Exception: if basis is cc-pvtz (key 6) and atom is H, use 7 instead
+            if { $calculation_set == 6 && $atom eq "H" } {
+                set send_key 7
+            }
+
+            # Send the chosen key and Enter
+            send "$send_key\r"
+
+            # Small delay for stability
+            sleep 0.5
+        }
+        timeout {
+            send_user "⚠️ Timeout waiting for atom selection prompt (iteration $i)\n"
+            break
+        }
+    }
+}
+
+
+# Step 7: After selecting the basis sets, reorder geom file
+expect {
+    "Reorder geom file for geometry optimization and orbital print out? (y)" {
+        send "y\r"
+    }
+}
+
+# Step 8: Finally, choosing for interactive input
+expect {
+    " Would you like to do an interactive input? <NO>" {
+        send "no\r"
+    }
+}
+
+# Step 9: SCF Input
+expect {
+    "main menu options" {
+        send "2\r"
+    }
+}
+
+#Step 10: Closed Shell Calculation
+expect {
+    " Do you want a closed shell calculation ? <YES>" {
+        send "no\r"
+    }
+}
+
+
+#Step 11: DOCC for each irrep
+expect {
+    " Input the no. of doubly occupied orbitals for each irrep, DOCC:" {
+        send "$scf_docc\r"
+    }
+}
+
+
+# Step 12: OPSH for each irrep
+expect {
+    " Input the no. of open shell orbitals for each irrep, OPSH:" {
+        send "$scf_opsh\r"
+    }
+}
+
+# Step 13: Validation
+expect {
+    " Is this correct? <YES> " {
+        send "yes\r"
+    }
+}
+
+# Step 14: Handle either high-spin prompt or Roothaan alpha/beta input
+
+# Allow infinite waiting just in case (you can set a custom timeout)
+set timeout 2
+
+# Enter a loop to handle both situations if they appear
+while {1} {
+    expect {
+        -re {Would you like the high spin case\?.*<YES>} {
+            send_user "→ Detected high-spin prompt. Sending $high_spin\n"
+            send "$high_spin\r"
+            break
+        }
+
+	-re {Input alpha.*beta.*pair:} {
+            send_user "→ Detected Roothaan alpha/beta pair prompt. Sending 0 -1\n"
+            send "0 -1\r"
+            # Done handling Roothaan input, move on
+	    break
+    	}
+
+        timeout {
+            send_user "⚠️ Timeout: no recognized prompt found, moving on.\n"
+            break
+        }
+
+        eof {
+            send_user "✅ End of input detected.\n"
+            break
+        }
+    }
+}
+
+# Allow infinite waiting just in case (you can set a custom timeout)
+set timeout -1
+
+
+# Step 15: Default program Parameters?
+expect {
+    " Would you like to change the default program parameters? <NO> " {
+        send "no\r"
+    }
+}
+
+
+# Step 16: Title
+expect {
+    "  Input a title: <Default SCF Title>" {
+	send "\r"
+    }
+}
+
+# Step 17: MCSCF Input
+expect {
+    "main menu options" {
+        send "3\r"
+    }
+}
+
+# Step 18: Freeze orbitals	
+expect -re {Freeze orbitals prior to MCSCF \(no gradients available\) \[y\|n\]\s*} {
+    send "n\r"
+}
+
+# Step 19: Prepare Input
+expect -re {prepare input for no\(0\), CI\(1\), MCSCF\(2\), SA-MCSCF\(3\) analytical gradient\s*} {
+    send "1\r"
+}
+
+
+# Step 20: DRTS Number
+expect -re {Enter number of DRTS \[1-8\]\s*} {
+    send "1\r"
+}
+
+# Step 21: number of electrons
+expect -re {number of electrons for DRT #1.*} {
+    send "$num_electrons\r"
+}
+
+# Step 22: Specify Multiplicity
+expect -re {multiplicity for DRT #1\s*} {
+    send "$singlet_triplet_num\r"
+}
+
+# Step 23: Specify spatial symmetry
+expect -re {spatial symmetry for DRT #1\s*} {
+    send "$spatial_symmetry\r"
+}
+
+# Step 24: Excitation level
+expect -re {excitation level \(cas,ras\)->aux\s*} {
+    send "\r"
+}
+
+send "\r"
+
+# Step 25: Excitation level (ras->cas,aux)
+#expect -re {[\\s\\S]*excitation level ras->*$} {
+#    send "\r"
+#}
+
+
+# Step 26: Number of doubly occupied orbitals per irrep
+expect -re {number of doubly occupied orbitals per irrep[ \\\t\\\r\\\n]*$} {
+    send "$mcscf_docc\r"
+}
+
+
+send "$mcscf_cas\r"
+
+# Step 27: Number of CAS orbitals per irrep
+#expect -glob "*number of CAS orbitals per irrep*" {
+#    send "$mcscf_cas\r"
+#}
+
+
+send "n\r"
+
+# Step 28: Apply additional group restrictions
+#expect -glob "Apply add. group restrictions for DRT 1 [y|n]*" {
+#    send "n\r"
+#}
+
+# Step 29: Set MCSCF Iterations
+if { $mcscf_iter == 100 || $mcscf_iter == -1 } {
+    # Just press Enter
+    send "\r"
+} else {
+    # Erase previous default (3 backspaces) and send the actual value
+    send "\b\b\b$mcscf_iter\r"
+}
+
+send "\u001b\[A"     ;# Press Up Arrow
+send "Y\r"           ;# Finished
+
+
+# Step 30: Set up job control
+expect {
+    "main menu options" {
+        send "5\r"
+    }
+}
+
+# Step 31: Choose submenu type of calculation
+expect {
+    -re {submenu 1: type of calculation} {
+        send "1\r"
+    }
+}
+
+# Step 31.5: Handle optional existing job control file prompt
+set timeout 1
+expect {
+    -re {You have an existing job control file.*Discard it.*\(y\|n\)} {
+        send "y\r"
+    }
+    timeout {
+        # If the prompt does not appear, just continue
+    }
+}
+set timeout -1
+
+# Step 32: Choose job control setup
+expect {
+    -re {submenu 1\.1: job control setup} {
+        send "2\r"
+    }
+}
+
+# Step 33: Enter to continue
+send "\r"
+
+
+# Step 34: Choosing number of optimization cycles
+expect {
+    -re {Enter the number of optim\. cycles:} {
+        if { $mcscf_opt_iter == 10 || $mcscf_opt_iter == -1 } {
+            send "\r"
+        } else {
+            # Clear the existing characters and send new
+            send "\b\b$mcscf_opt_iter\r"
+        }
+    }
+}
+
+
+# Step 35: choose among the choices
+send "2\r"
+send "6\r"
+send "1\r"
+
+# Step 36: Starting Orbitals
+send "y\r"
+
+# Step 37: Exiting from Set UP Control
+send "4\r"
+
+# Step 38: Exiting from the menu
+send "7\r"
+
+sleep 10
+
+
+# Continue automation or hand control back to user
+interact
+
+

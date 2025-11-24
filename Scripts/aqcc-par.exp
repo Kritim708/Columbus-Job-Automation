@@ -1,0 +1,452 @@
+#!/usr/bin/expect -f
+
+
+set timeout -1
+
+
+
+#==============================
+# Read input values from file
+#==============================
+
+# Path to input file
+set input_file "input_values.txt"
+
+# Source the file to load all "set var value" lines as Tcl variables
+# The file must be in proper Tcl format like:
+# set var_name value
+source $input_file
+
+
+#===========================
+# STARTING COLINP
+#===========================
+spawn $COLUMBUS/colinp
+set colinp_pid [exp_pid]
+
+# Step 1: Main menu
+expect {
+    "main menu options" {
+        send "4\r"
+    }
+}
+
+# Step 2: Continue
+expect {
+    "press return to continue" {
+        send "\r"
+    }
+}
+
+
+# Step 3: CIDRT Input
+expect {
+    -re "CIDRT INPUT FACILITY" {
+        send "2\r"
+    }
+}
+
+# Step 3.5: Handle optional existing job control file prompt
+set timeout 1   ;# wait up to 2 seconds for the prompt
+expect {
+    -re {cigrdin exists.*Do you want to overwrite.*\(y\|n\)} {
+        send "y\r"
+    }
+    timeout {
+        # Prompt did not appear, continue automatically
+    }
+}
+set timeout -1
+
+
+# Step 4: Compute Gradients
+expect {
+    "Do you want to compute gradients or non-adiabatic couplings?" {
+        send "y\r"
+    }
+}
+
+
+
+# Step 5: Disable Spin-Orbit CI
+expect {
+    -re {Spin-Orbit CI *\[y\|n\]} {
+        send "n\r"
+    }
+}
+
+
+# Step 6: Enter Mulitplicity
+expect {
+    "Enter the multiplicity" {
+        send "$singlet_triplet_num\r"
+    }
+}
+
+# Step 7: Enter the number of electrons
+expect {
+    "Enter the number of electrons" {
+        send "$num_electrons\r"
+    }
+}
+
+# Step 8: Enter the molecular spatial symmetry
+expect {
+    -re {molec.*spatial symmetry} {
+        send "$spatial_symmetry\r"
+    }
+}
+
+# Step 9: Enter Frozen Core Orbitals
+expect {
+    -re {number of frozen core orbitals per irrep} {
+        send "$mrci_fc\r"
+    }
+}
+
+
+# Step 10: Enter Virtual Core Orbitals
+send "$mrci_fv\r"
+#expect {
+#     "number of frozen virt. orbitals per irrep " {
+#        send "$mrci_fv\r"
+#    }
+#}
+
+
+
+# Step 11: Enter Internal Orbitals
+send "$mrci_int\r"
+#expect {
+#    -re {number of internal.*orbitals per irrep} {
+#        send "$mrci_int\r"
+#    }
+#}
+
+# Step 12: Enter DOCC per irrep
+send "$mrci_docc\r"
+#expect {
+#    -re {doubly occupied orbitals per irrep} {
+#        send "$mrci_docc\r"
+#    }
+#}
+
+# Step 13: Enter AUX per irrep
+send "$mrci_aux\r"
+#expect {
+#    -re {auxiliary.*internal.*orbitals per irrep} {
+#        send "$mrci_aux\r"
+#    }
+#}
+
+# Step 14: Enter excitation level
+expect {
+    -re {Enter the excitation level.*} {
+        send "2\r"
+    }
+}
+
+
+# Step 15: Confirm generalized interacting space restrictions
+expect {
+    -re {Generalized.*interacting.*space.*\[y\|n\]} {
+        send "y\r"
+    }
+}
+
+# Step 16: Send default allowed reference symmetries (press Enter)
+expect {
+    -re {Enter the allowed reference symmetries.*} {
+        send "\r"
+    }
+}
+
+# Step 16: Skip additional group restrictions
+expect {
+    -re {Apply.*additional.*group.*restrictions.*\[y\|n\]} {
+        send "n\r"
+    }
+}
+
+# Step 17: Choose CI Program
+expect {
+    -re {Choose CI program.*} {
+        send "2\r"
+    }
+}
+
+# Step 18: CIUDGIN Input Program
+
+
+
+
+expect {
+    -re {CIUDGIN INPUT MENU} {
+	# Choosing AQCC and not CISD
+	send "\bN"              ;# backspace, then send N
+	send "\u001b\[B"        ;# down arrow
+	send "\bY"              ;# backspace, then send Y
+	send "\u001b\[A"        ;# up arrow
+	
+	
+	# Writing the parallel parameters
+	send "\u001b\[A\u001b\[A\u001b\[A\u001b\[A\u001b\[A"     ;# Press Up Arrow 5 times
+
+    	send "\b\b\b$ncores"
+    	send "\u001b\[B"
+    	
+    	send "\b\b\b\b\b\b$mem_per_core"
+    	send "\u001b\[B"
+    	
+    	send "\b\b\b\b\b$bandwidth"
+    	send "\u001b\[B"
+    	
+    	send "\b\b\b$processor_per_node"
+    	send "\u001b\[B"
+
+	# Choosing number of iterations
+        if { $aqcc_iter == 30 || $aqcc_iter == -1} {
+	    # Just do the normal sequence
+	    # send "\u001b\[A"     ;# Press Up Arrow
+
+        } else {
+            # Erase old value and type the new one
+	    send "\u001b\[A\u001b\[A\u001b\[A\u001b\[A\u001b\[A"
+            send "\b\b$cisd_iter\r"
+	    send "\u001b\[B\u001b\[B\u001b\[B\u001b\[B"
+        }
+    }
+}
+
+# Confirming finished
+send "Y\r"
+
+# Step 19: Parallel CI input parameter generation
+expect {
+    -re {Choice:\s*(\[.*\])?} {
+        send "1\r"
+    }
+    timeout {
+        puts "⚠️ Could not detect the CI input parameter menu."
+    }
+}
+
+
+
+
+# Step 20: # Wait for the "Input the available core memory" prompt
+expect {
+    -re "Input the available core memory.*" {
+        send "\b\b\b\b\b$core_memory\r"
+    }
+}
+
+
+
+# Step 21: Overwriting the old cigrdin. 
+expect {
+    -re "cigrdin exists.*Do you want to overwrite it\\? \\(y\\|n\\)" {
+        after 100
+        send "y\r"
+    }
+}
+
+
+# Step 21: Computing the memory
+# -------------------------------
+# Wait for 3 minutes (partitioning)
+# -------------------------------
+set wait_seconds 180
+set start_time [clock seconds]
+set input_file "input_values.txt"
+
+while {1} {
+    expect {
+        -re {partitioning finished, press return to continue} {
+            puts "✅ Partitioning finished — continuing."
+            after 100
+            send "\r"
+            break
+        }
+
+        -re {partitioning failed} {
+            puts "❌ Partitioning FAILED — inspecting runc.error..."
+
+            # short delay to ensure file is fully written
+            after 2000  ;# 2 seconds
+
+            if {[file exists "runc.error"]} {
+                set fh [open "runc.error" r]
+                set content [read $fh]
+                close $fh
+
+	        # Find all "not enough memory" lines and extract the number
+	        set all_matches [regexp -all -inline {not enough memory:\s*(-?\d+(?:\.\d+)?)} $content]
+    
+	        if {[llength $all_matches] > 0} {
+	            # Take the last match
+	            set last_match [lindex $all_matches end]
+	            puts "Last match = $last_match"
+	    
+	            # Compute absolute, round, add 50
+	            set abs_val [expr {abs($last_match)}]
+	            set rounded [expr {int($abs_val + 0.5 + $mem_per_core)}]
+	            set mem_per_core [expr {$rounded + 50}]
+	        
+        	    puts "💾 Adjusted mem_per_core = $mem_per_core MB"
+
+
+                    # update input_values.txt
+                    if {[file exists $input_file]} {
+                        set in_f [open $input_file r]
+                        set in_content [read $in_f]
+                        close $in_f
+
+                        append in_content "\nset mem_per_core $mem_per_core\n"
+                        
+                        set out_f [open $input_file w]
+                        puts -nonewline $out_f $in_content
+                        close $out_f
+                        puts "💾 Updated $input_file with new mem_per_core"
+                    } else {
+                        puts "⚠️ $input_file not found. Cannot adjust memory automatically."
+                        break
+                    }
+			
+		    
+		    # --------------------------------------------------------
+		    # Stop the current running process and spawn new one
+		    # --------------------------------------------------------
+		    catch {exp_detach $spawn_id}
+		    catch {close}		    
+		    catch {wait}		    
+		    #exec sh -c "sleep 2; ./part_v-colinp_automate.exp" &
+		    exit
+		    
+   		    break
+
+                } else {
+                    puts "⚠️ No 'not enough memory' lines found in runc.error"
+                    break
+                }
+            } else {
+                puts "⚠️ runc.error not found. Cannot adjust memory automatically."
+                break
+            }
+            exit
+            # Send real SIGINT to process
+	    #exec kill -INT $colinp_pid
+        }
+        
+        # ------------------------------
+        # Timeout handling (still waiting)
+        # ------------------------------
+        timeout {
+            if {[expr {[clock seconds] - $start_time}] >= $wait_seconds} {
+                puts "⏰ Timeout after $wait_seconds seconds — checking runc.error..."
+                after 2000
+                exp_continue
+            } else {
+                puts -nonewline "."
+                exp_continue
+            }
+        }
+
+        # ------------------------------
+        # EOF — process exited unexpectedly
+        # ------------------------------
+        eof {
+            puts "eof encountered — exiting loop."
+            break
+        }
+        
+    }
+}
+
+
+send "\r\r"
+
+
+# Step 19: Main menu
+expect {
+    "main menu options" {
+        send "5\r"
+    }
+}
+
+
+# Step 20: Choose submenu type of calculation
+expect {
+    -re {submenu 1: type of calculation} {
+        send "1\r"
+    }
+}
+
+# Step 20.5: Handle optional existing job control file prompt
+set timeout 1
+expect {
+    -re {You have an existing job control file.*Discard it.*\(y\|n\)} {
+        send "y\r"
+    }
+    timeout {
+        # If the prompt does not appear, just continue
+    }
+}
+set timeout -1
+
+# Step 21: Choose job control setup
+expect {
+    -re {submenu 1\.1: job control setup} {
+        send "2\r"
+    }
+}
+
+# Step 22: Setting optim cycles
+expect {
+    -re {Enter the number of optim\. cycles:} {
+        if { $aqcc_opt_iter == 10 || $aqcc_opt_iter == -1 } {
+            send "\r"
+        } else {
+            # Clear the existing characters and send new
+            send "\b\b$mcscf_opt_iter\r"
+        }
+    }
+}
+
+# Step 23: Select multiple optimization options
+expect {
+    -re {submenu 1\.2\.1: optimization options} {
+        send "4\r"   ;#  ci gradient
+        send "6\r"   ;# convert MOs into molden proprietary format
+        send "1\r"   ;# Done with selections
+    }
+}
+
+
+# Step 24: Do not start orbitals from SCF
+expect {
+    -re {starting orbitals from scf.*\(y\|n\)} {
+        send "n\r"
+    }
+}
+
+# Step 25: Do not run parallel MR-CI (optional prompt)
+expect {
+    -re {run parallel MR-CI.*\(y\|n\)} {
+        send "y\r"
+    }
+}
+
+sleep 10
+
+# Step 37: Exiting from Set UP Control
+send "4\r"
+
+# Step 38: Exiting from the menu
+send "7\r"
+
+
+# Continue automation or hand control back to user
+interact
+
+

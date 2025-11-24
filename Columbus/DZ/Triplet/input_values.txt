@@ -1,0 +1,32 @@
+#======================
+# INPUT VALUES
+#======================
+set num_unique_atoms 3
+set group_symmetry "c2v"
+set spatial_symmetry 3
+
+# FROM DRT TABLE
+#===========================
+set num_electrons 40
+set scf_docc "10 2 6 1"
+set scf_opsh "1 0 1 0"
+set mcscf_docc "10 0 6 0"
+set mcscf_cas "1 4 1 2"
+set mrci_fc "4 0 2 0"
+set mrci_fv "0 0 0 0"
+set mrci_docc "6 0 4 0"
+set mrci_aux "0 0 0 0"
+set mrci_int "7 4 5 2"
+set COLUMBUS /usr/local/sw/Columbus/columbus-v7.2.2/Columbus
+
+# CUSTOM INPUT (Triplet)
+#===========================
+set calculation_set 1
+set singlet_triplet_num 3
+set high_spin yes
+set mcscf_iter -1
+set mcscf_opt_iter -1
+set cisd_iter -1
+set cisd_opt_iter -1
+set aqcc_iter -1
+set aqcc_opt_iter -1

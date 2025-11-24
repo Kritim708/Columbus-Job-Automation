@@ -1,0 +1,63 @@
+
+ program mcuft 4.1a2
+
+ formula tape construction for mcscf wave functions
+ using an index driven graphical unitary group approach.
+
+ programmed by: ron shepard
+
+ version date: 24-apr-92
+
+
+ This Version of Program MCUFT is Maintained by:
+     Thomas Mueller
+     Juelich Supercomputing Centre (JSC)
+     Institute of Advanced Simulation (IAS)
+     D-52425 Juelich, Germany 
+     Email: th.mueller@fz-juelich.de
+
+
+
+     ******************************************
+     **    PROGRAM:              MCUFT       **
+     **    PROGRAM VERSION:      5.5         **
+     **    DISTRIBUTION VERSION: 5.9.a       **
+     ******************************************
+
+
+ drt file: /home/kr7dh/COLUMBUS/ColumbusSetup/Columbus/DZ/Triplet/MCSCF/WORK/mcdrtfl       
+ dft file: /home/kr7dh/COLUMBUS/ColumbusSetup/Columbus/DZ/Triplet/MCSCF/WORK/mcdftfl       
+ oft file: /home/kr7dh/COLUMBUS/ColumbusSetup/Columbus/DZ/Triplet/MCSCF/WORK/mcoftfl       
+
+ drt header information:
+  title                                                                          
+ ndot=      16    nact=       8    nsym=       4    nrow=      62
+ ssym=       3    smult=      3    nelt=      40    nela=       8
+ nwalk=    604    ncsf=     604    lenbuf=  1600
+ 
+
+ diagonal ft construction complete.    3614 loops constructed.     8 ft buffers used.
+ 
+
+ off-diagonal ft construction complete.   41364 loops constructed.    70 ft buffers used.
+ 
+
+ diagonal loop statistics:
+                                                   1v       2v       3v    total
+ number of loops:                                  64     3550        0     3614
+ possible number of walks:                       2424    10482        0    12906
+ possible number of matrix contributions:        2424    20964        0    23388
+ actual number of walks:                         2424    10482        0    12906
+ actual number of matrix contributions:          2424    20964        0    23388
+ unitary group approach gain factor=    6.471
+
+ off-diagonal loop statistics:
+                                                   1v       2v       3v    total
+ number of loops:                               24264    17005       95    41364
+ possible number of walks:                      33303    24045      592    57940
+ possible number of matrix contributions:       33303    48090     1776    83169
+ actual number of walks:                        33303    24045      592    57940
+ actual number of matrix contributions:         33303    48090     1776    83169
+ unitary group approach gain factor=    2.011
+ 
+ 

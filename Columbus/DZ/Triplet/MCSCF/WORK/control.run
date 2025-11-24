@@ -1,0 +1,8 @@
+niter = 10 
+molden
+hermit
+abacus
+gdiis
+scf
+mcscf
+mcscfgrad
