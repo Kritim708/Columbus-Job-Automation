@@ -5,7 +5,7 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=kritim.rijal@richmond.edu
 #SBATCH --partition=basic
-#SBATCH --mem=64G
+#SBATCH --mem=12G
 #SBATCH --cpus-per-task=1
 
 date
@@ -16,10 +16,10 @@ echo "SLURM_NODELIST=$SLURM_NODELIST"
 cd $SLURM_SUBMIT_DIR/
 
 # Load modules
-export COLUMBUS=/usr/local/sw/Columbus/columbus-v7.2.2/Columbus
+#export COLUMBUS=/usr/local/sw/Columbus/columbus-v7.2.2/Columbus
 module load columbus/722
 
 # Run Columbus with full path
-/usr/bin/time -v $COLUMBUS/runc -m 64000 > runls
+/usr/bin/time -v $COLUMBUS/runc -m 12000 > runls
 
 date

@@ -119,7 +119,6 @@ else
         fi
     done
 fi
-echo "set COLUMBUS $COLUMBUS" >> input_values.txt
 sleep 1
 
 
@@ -171,6 +170,10 @@ else
         exit 1
     fi
 fi
+
+# Write the columbus directory to input_values
+echo "set COLUMBUS $COLUMBUS" >> input_values.txt
+
 
 #==============================================
 # Step 1.25: Choose what to run
