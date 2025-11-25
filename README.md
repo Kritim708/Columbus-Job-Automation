@@ -1,121 +1,209 @@
 # Columbus Job Automation Project
 
-This project automates the setup and execution of Columbus quantum chemistry calculations, including MCSCF, CISD, and AQCC jobs. It streamlines the process by automatically handling file management, input generation, and job execution.
+This project automates the setup and execution of Columbus quantum chemistry calculations, including MCSCF, CISD, and AQCC jobs. The workflow has been streamlined with modular scripts and a flexible output structure, making it easier to manage and track complex calculations.
+
+---
 
 ## Project Structure
 
-- `main.sh` - Main script that orchestrates the entire workflow
+- `main.sh`
+  - Entry point: collects high-level information from the user (e.g., calculation set and multiplicity).
 - `Scripts/`
-  - `input.sh` - Collects basic input parameters for Columbus calculations
-  - `input_values.txt` - Generated file containing all input parameters
-  - `part_i-make_geom.sh` - Converts XYZ files to Columbus geometry format
-  - `part_iii-colinp_automate.exp` - Handles MCSCF calculation automation
-  - `part_iv-colinp_automate.exp` - Handles CISD calculation automation
-  - `part_v-colinp_automate.exp` - Handles AQCC calculation automation
+  - `run.sh`: Drives the workflow, determines calculation settings (Singlet/Triplet and DZ/TZ), and conditionally launches MCSCF, CISD, and AQCC stages.
+  - `make_geom.sh`: Converts your XYZ geometry file to the Columbus input format.
+  - `mcscf.exp`, `cisd-ser.exp`, `cisd-par.exp`, `aqcc-ser.exp`, `aqcc-par.exp`: Expect scripts for automating each calculation stage, with “ser” for serial and “par” for parallel execution. *Parallel mode is under development.*
+  - Other supplementary files: config.txt, input_values.txt etc.
+
+**Note:** The parallel execution scripts (`*par.exp`) are under development and may not be fully functional.
+
+---
 
 ## Prerequisites
 
-- Columbus 7.0 or higher must be installed
-- Expect scripting tool must be available
-- Linux/Unix environment with bash shell
+- Columbus 7.0 or higher installed
+- Linux/Unix environment (bash shell)
+- Expect scripting tool installed
 
-## Usage Guide
+---
 
-1. **Prepare Your Files**
-   - Have the path of your XYZ geometry file ready to input
-   - Ensure the bash file are made executable using following command:
-   ```chmod +x main.sh
-   chmod +x Scripts/input.sh
-   chmod +x Scripts/part_i-make_geom.sh```
+## Workflow (what you actually do)
 
-2. **Run the Main Script**
-   ```bash
-   bash main.sh
-   ```
+Short answer: run main.sh and follow the prompts. main.sh calls Scripts/input.sh and then hands off to Scripts/run.sh, which performs all remaining steps (geometry conversion, creating output folders, running expect scripts and Columbus runc, and logging).
 
-3. **Input Basic Parameters**
-   The script will ask for several parameters:
-   - Number of unique elements in your molecule
-   - Calculation set (cc-pvdz=1 or cc-pvtz=6)
-   - Group symmetry (e.g., cs, c2v)
-   - Spatial symmetry
-   - Multiplicity (Singlet=1 or Triplet=3)
-   - Various orbital specifications from DRT table:
-     - Number of electrons
-     - SCF doubly occupied orbitals
-     - SCF open-shell orbitals
-     - MCSCF doubly occupied orbitals
-     - MCSCF active space
-     - MRCI frozen core
-     - MRCI frozen virtual
-     - MRCI doubly occupied orbitals
-     - MRCI active orbitals
-     - MRCI auxiliary orbitals
-     - MRCI internal orbitals
+Below is exactly what main.sh asks for (in order) and how to respond or use the options it provides.
 
-4. **Select Calculation Types**
-   You'll be prompted to choose which calculations to run:
-   - MCSCF (y/n)
-   - CISD (y/n)
-   - AQCC (y/n)
+1) Start
+- Make sure scripts are executable:
+  ```bash
+  chmod +x main.sh
+  chmod +x Scripts/*.sh
+  chmod +x Scripts/*.exp
+  ```
+- Run:
+  ```bash
+  bash main.sh
+  ```
 
-5. **Customize Parameters (Optional)**
-   For each selected calculation type, you can customize:
-   - Number of iterations
-   - Number of optimization cycles
-   (Default values will be used if not specified)
+2) Columbus installation directory
+- Prompt: Enter Columbus directory (default is /usr/local/chem.sw/Columbus).
+- main.sh verifies that the provided directory contains both `runc` and `colinp`. Exported to the run environment as COLUMBUS.
+- Tip: If verification fails, check the path and try again.
 
+3) Geometry (.xyz) file
+- main.sh switches into the Scripts directory and looks for .xyz files there.
+- If .xyz files are present you can select one or choose "Import a new .xyz file".
+- If none are present you will be asked for the full path to your .xyz file; it will be copied into Scripts.
+- After selection, the script runs `Scripts/make_geom.sh <selected_xyz> <COLUMBUS>` which calls Columbus's xyz2col.x to create the geometry file used by Columbus.
 
-## Configuring Memory Allocation
+4) Input values (input.sh)
+- main.sh checks for an existing `Scripts/input_values.txt`. You can:
+  - Reuse the existing file (answer y) — skip re-entering basic parameters.
+  - Create a new one (answer n) — this runs `Scripts/input.sh` and prompts for the following fields:
+    - Number of unique atoms (num_unique_atoms)
+    - Group symmetry (e.g., cs, c2v)
+    - Spatial symmetry
+    - DRT-table related values:
+      - Number of electrons (num_electrons)
+      - SCF doubly occupied orbitals (scf_docc)
+      - SCF open-shell orbitals (scf_opsh)
+      - MCSCF doubly occupied orbitals (mcscf_docc)
+      - MCSCF active space (mcscf_cas)
+      - MRCI frozen core (mrci_fc)
+      - MRCI frozen virtual (mrci_fv)
+      - MRCI doubly occupied orbitals (mrci_docc)
+      - MRCI auxiliary orbitals (mrci_aux)
+      - MRCI internal orbitals (mrci_int)
+- At the end input_values.txt is written into Scripts and later copied into each run's output directory.
 
-The default memory allocation for calculations is 4000 MB. To increase memory for larger systems:
+5) Calculation set and multiplicity (high-level choices)
+- Prompt: Select calculation set:
+  - 1 → cc-pvdz (labelled DZ)
+  - 6 → cc-pvtz (labelled TZ)
+- Prompt: Select multiplicity:
+  - 1 → Singlet
+  - 3 → Triplet
+  - (You may select only one option in the default flow; configuration allows preparing for one or both multiplicities)
 
-1. **Open `main.sh` in a text editor**
+6) Run mode (serial vs parallel)
+- Prompt: Do you want to run in parallel mode? (y/n)
+  - If yes, you will be asked for parallel configuration values which are appended to input_values.txt:
+    - Number of cores (ncores, default 4)
+    - Memory per core in MB (mem_per_core, default 750)
+    - Effective bandwidth (bandwidth, default 50)
+    - Processors per node (processor_per_node, default 4)
+    - Core memory in MB (core_memory, default 20000)
+  - If no, run mode defaults to serial.
+- Note: Parallel mode uses the `*-par.exp` expect scripts; these are marked experimental — if you do not need parallel execution, prefer serial mode.
 
-2. **Locate and modify the following lines**:
+7) Slurm submission choice
+- Prompt: Do you want to submit jobs via Slurm? (y/n)
+  - If yes, you must provide the full path to your Slurm submission file; it will be copied into the run directory as `columbus.slurm`.
+  - The script will use sbatch to submit `columbus.slurm` and poll the job queue until completion when Slurm is selected.
+  - If no, the script invokes $COLUMBUS/runc locally.
 
-   - **For MCSCF** (around line 170):
-```bash
-     $COLUMBUS/runc -m 4000 > runls &
-```
+8) Per-multiplicity job options (for each selected multiplicity)
+- For each multiplicity (Singlet and/or Triplet) you will be asked:
+  - Do you want to run MCSCF? (y/n)
+    - If yes, you will be prompted for:
+      - MCSCF iterations (mcscf_iter) (default -1 = automatic)
+      - MCSCF optimization cycles (mcscf_opt_iter) (default -1)
+      - Memory for MCSCF (mcscf_mem) in MB (default 4000)
+  - Do you want to run CISD? (y/n)
+    - If yes, you will be prompted for:
+      - CISD iterations (cisd_iter) (default -1)
+      - CISD optimization cycles (cisd_opt_iter) (default -1)
+      - Memory for CISD (cisd_mem) in MB (default 4000)
+  - Do you want to run AQCC? (y/n)
+    - If yes, you will be prompted for:
+      - AQCC iterations (aqcc_iter) (default -1)
+      - AQCC optimization cycles (aqcc_opt_iter) (default -1)
+      - Memory for AQCC (aqcc_mem) in MB (default 4000)
+- The script bundles these into a per-multiplicity `input_values.txt` under:
+  - `Columbus/<DZ|TZ>/<Singlet|Triplet>/input_values.txt`
 
-   - **For CISD** (around line 205):
-```bash
-     $COLUMBUS/runc -m 4000 > runls &
-```
+9) What main.sh does next
+- main.sh writes a `config.txt` that contains:
+  - calculation_set, run_parallel, use_slurm, slurm_path
+  - run_mcscf_*, run_cisd_*, run_aqcc_* flags for each multiplicity
+  - memory settings for each multiplicity/stage
+  - COLUMBUS path
+- main.sh then launches `Scripts/run.sh <Multiplicity>` in the background for each selected multiplicity.
 
-   - **For AQCC** (around line 239):
-```bash
-     $COLUMBUS/runc -m 4000 > runls &
-```
+10) What `run.sh` does (high-level)
+- Loads `config.txt` and selects run parameters appropriate for the multiplicity passed to it.
+- Converts the calculation_set number to text label (DZ or TZ).
+- Determines run mode: `ser` or `par` depending on run_parallel.
+- Redirects all output to `Columbus/<DZ|TZ>/<Multiplicity>/log.out`.
+- MCSCF stage (if selected):
+  - Creates `MCSCF/` folder, copies input files and `mcscf.exp`, runs expect on `mcscf.exp`, then runs `$COLUMBUS/runc -m <mcscf_mem>` (or submits Slurm job).
+  - On success copies `MOCOEFS/mocoef_mc.sp` to `mocoef` for downstream use.
+- CISD stage (if selected):
+  - Prepares `CI/`, copies files and the appropriate `cisd-<ser|par>.exp`.
+  - Runs expect script; if `runc.error` contains "not enough memory" and "pscript failed" it will retry the expect script (so you may need to increase memory and re-run if the loop repeats).
+  - Runs `$COLUMBUS/runc -m <cisd_mem>` (or submits Slurm job).
+- AQCC stage (if selected):
+  - Similar to CISD: copies `aqcc-<ser|par>.exp`, retries expect on memory-detected failures, and runs `$COLUMBUS/runc -m <aqcc_mem>` (or via Slurm).
+- After all selected stages the script reports completion to the log.
 
-3. **Change `4000` to your desired memory in MB**:
-```bash
-   $COLUMBUS/runc -m 8000 > runls &    # For 8 GB
-   $COLUMBUS/runc -m 16000 > runls &   # For 16 GB
-```
+---
 
-**Note**: Ensure your system has sufficient RAM available before increasing memory allocation.
+## What to watch for and quick troubleshooting
 
+- COLUMBUS path: main.sh will check that `$COLUMBUS/runc` and `$COLUMBUS/colinp` exist. Fix the path if verification fails.
+- Expect must be installed and callable (used by the `.exp` scripts).
+- If you see repeated "not enough memory" and "pscript failed" in `runc.error`, increase the memory values when re-running main.sh (or edit the produced `config.txt`/`input_values.txt` and re-run the relevant stage manually).
+- Logs:
+  - Main consolidated log: `log.out` (created in repo root by main.sh)
+  - Per-run log: `Columbus/<DZ|TZ>/<Singlet|Triplet>/log.out`
+  - Per-stage runc errors may be in `runc.error` inside the stage directory.
+- Reuse inputs:
+  - If `Scripts/input_values.txt` already exists you can choose to reuse it and avoid retyping the DRT-table values.
+- Parallel mode:
+  - Experimental — verify resource availability and test on small systems before large production runs.
+- Slurm:
+  - If you choose Slurm, ensure your slurm file has correct email, core and memory requests, and is accessible from the machine where you run main.sh.
 
+---
 
 ## Output Structure
 
-The script creates a `Columbus` directory with subdirectories for each calculation type:
-- `Columbus/MCSCF/` - MCSCF calculation files and results
-- `Columbus/CI/` - CISD calculation files and results
-- `Columbus/AQCC/` - AQCC calculation files and results
+Results are organized as follows:
 
-## Important Notes
+- `Columbus/DZ/` – All calculations using DZ basis
+- `Columbus/TZ/` – All calculations using TZ basis
+  - Each contains subfolders by multiplicity:
+    - `Singlet/`
+    - `Triplet/`
+      - Each contains:
+        - `MCSCF/`
+        - `CI/` (from CISD)
+        - `AQCC/`
 
-- You can reuse previously entered parameters by keeping the generated `input_values.txt` file
-- All calculations will be performed sequentially (MCSCF → CISD → AQCC)
-- Each stage's output is preserved in its respective directory
-- A log file (`log.out`) is created in the root directory to track the entire process
+Example path for your results:
+```
+Columbus/DZ/Singlet/MCSCF/
+Columbus/DZ/Singlet/CI/
+Columbus/DZ/Singlet/AQCC/
+```
+A comprehensive log (`log.out`) is maintained per run.
+
+---
 
 ## Error Handling
 
-- The script checks for the existence of required files and directories
-- Clear error messages are provided if prerequisites are not met
-- Each stage's completion is verified before proceeding to the next
+- All critical steps validate input files and detect environment issues (e.g., missing geometry, configuration errors, low memory).
+- Clear error messages are provided where available; repeated memory failures may require updating memory parameters and re-running.
+- Each stage's completion is verified before proceeding to the next.
 
+---
+
+## Notes for Users
+
+- You can reuse parameters by keeping the generated configuration and input files.
+- All calculations are performed in a staged manner.
+- Parallel execution is experimental — prefer serial scripts unless you have tested your cluster/job system setup.
+- For advanced users: memory settings and Slurm support can be customized during your input process.
+
+---
+
+**See each `.sh` and `.exp` file for details as the internal workflow may change. For development or troubleshooting, inspect the log files and output folders in Columbus.**
