@@ -2,12 +2,12 @@
 Columbus/*
 !Columbus/.gitkeep
 
-# Scripts folder: ignore everything except .xyz, geom, and columbus.slurm
+# Scripts folder: ignore everything except scripts and columbus.slurm
 Scripts/*
-!Scripts/*.xyz
-!Scripts/geom
+!Scripts/*.exp
+!Scripts/*.sh
 !Scripts/columbus.slurm
 
 # Track log.out in the current directory
-!log.out
+log.out
 
