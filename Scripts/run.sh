@@ -76,8 +76,16 @@ cd .. || exit 1
 #==============================================
 if [[ "$run_mcscf" =~ ^[Yy]$ ]]; then
     echo "➡️ Starting MCSCF stage..."
-    
-    mkdir -p ./Columbus/$calculation_set_var/$multiplicity/MCSCF
+
+
+    # CREATE DIRECTORY
+    dir="./Columbus/$calculation_set_var/$multiplicity/MCSCF"
+    mkdir -p "$dir"
+
+    #Check if the calculations are already performed; override if user allows
+    [ "$(ls -A "$dir")" ] && read -p "Directory '$dir' contains files. Override? (y/N): " choice && [[ "$choice" =~ ^[Yy]$ ]] && rm -rf "$dir"/* || { [ "$(ls -A "$dir")" ] && echo "Keeping existing contents. Exiting." && exit 0; }
+    echo "Ready to use '$dir'"
+
     cp ./Columbus/$calculation_set_var/$multiplicity/input_values.txt ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
     cp ./Scripts/mcscf.exp ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
     cp ./Scripts/geom ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
@@ -136,7 +144,17 @@ if [[ "$run_cisd" =~ ^[Yy]$ ]]; then
     echo "➡️ Starting CISD stage..."
 
     cd ./Columbus/$calculation_set_var/$multiplicity/ || exit 1
-    mkdir -p CI
+
+
+    # CREATE DIRECTORY
+    dir="./CI"
+    mkdir -p "$dir"
+
+    #Check if the calculations are already performed; override if user allows
+    [ "$(ls -A "$dir")" ] && read -p "Directory '$dir' contains files. Override? (y/N): " choice && [[ "$choice" =~ ^[Yy]$ ]] && rm -rf "$dir"/* || { [ "$(ls -A "$dir")" ] && echo "Keeping existing contents. Exiting." && exit 0; }
+    echo "Ready to use '$dir'"
+
+
     cp ./input_values.txt ./CI/
     cp ./MCSCF/* ./CI/
     cp ../../../Scripts/cisd-$run_mode.exp ./CI/
@@ -213,7 +231,18 @@ if [[ "$run_aqcc" =~ ^[Yy]$ ]]; then
     echo "➡️ Starting AQCC stage..."
 
     cd ./Columbus/$calculation_set_var/$multiplicity/ || exit 1
-    mkdir -p AQCC
+    
+    
+    # CREATE DIRECTORY
+    dir="./AQCC"
+    mkdir -p "$dir"
+
+    #Check if the calculations are already performed; override if user allows
+    [ "$(ls -A "$dir")" ] && read -p "Directory '$dir' contains files. Override? (y/N): " choice && [[ "$choice" =~ ^[Yy]$ ]] && rm -rf "$dir"/* || { [ "$(ls -A "$dir")" ] && echo "Keeping existing contents. Exiting." && exit 0; }
+    echo "Ready to use '$dir'"
+
+    
+    
     cp ./input_values.txt ./AQCC/
     cp ./CI/* ./AQCC/
     cp ../../../Scripts/aqcc-$run_mode.exp ./AQCC/
