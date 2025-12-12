@@ -23,6 +23,10 @@ This project automates the setup and execution of Columbus quantum chemistry cal
 - Columbus 7.0 or higher installed
 - Linux/Unix environment (bash shell)
 - Expect scripting tool installed
+- Python 3 (for DRT.xlsx parsing via `parse_drt.py`)
+- Python packages:
+  - `pandas` – for reading and parsing Excel files
+  - `openpyxl` – backend for reading .xlsx files (installed with pandas)
 
 ---
 
@@ -55,10 +59,11 @@ Below is exactly what main.sh asks for (in order) and how to respond or use the 
 - If none are present you will be asked for the full path to your .xyz file; it will be copied into Scripts.
 - After selection, the script runs `Scripts/make_geom.sh <selected_xyz> <COLUMBUS>` which calls Columbus's xyz2col.x to create the geometry file used by Columbus.
 
-4) Input values (input.sh)
-- main.sh checks for an existing `Scripts/input_values.txt`. You can:
-  - Reuse the existing file (answer y) — skip re-entering basic parameters.
-  - Create a new one (answer n) — this runs `Scripts/input.sh` and prompts for the following fields:
+4) Input values configuration
+- main.sh presents a menu with three options for configuring input values:
+  - **Use existing input_values.txt** (if available) — skip re-entering basic parameters.
+  - **Import DRT.xlsx** — runs `Scripts/parse_drt.py` to parse DRT (Doubly-Rooted Ternary) values from an Excel file. You can specify a custom directory or use the default (Scripts/DRT.xlsx).
+  - **Manually enter input values (input.sh)** — runs `Scripts/input.sh` and prompts for the following fields:
     - Number of unique atoms (num_unique_atoms)
     - Group symmetry (e.g., cs, c2v)
     - Spatial symmetry
@@ -86,20 +91,25 @@ Below is exactly what main.sh asks for (in order) and how to respond or use the 
 
 6) Run mode (serial vs parallel)
 - Prompt: Do you want to run in parallel mode? (y/n)
-  - If yes, you will be asked for parallel configuration values which are appended to input_values.txt:
-    - Number of cores (ncores, default 4)
-    - Memory per core in MB (mem_per_core, default 750)
-    - Effective bandwidth (bandwidth, default 50)
-    - Processors per node (processor_per_node, default 4)
-    - Core memory in MB (core_memory, default 20000)
-  - If no, run mode defaults to serial.
+  - If yes, you will be prompted for parallel configuration values which are appended to `input_values.txt`:
+    - Number of cores (`ncores`, default 4)
+    - Memory per core in MB (`mem_per_core`, default 750)
+    - Effective bandwidth (`bandwidth`, default 50)
+    - Processors per node (`processor_per_node`, default 4)
+    - Core memory in MB (`core_memory`, default 20000)
+  - If no, the script defaults to serial mode execution.
 - Note: Parallel mode uses the `*-par.exp` expect scripts; these are marked experimental — if you do not need parallel execution, prefer serial mode.
 
 7) Slurm submission choice
 - Prompt: Do you want to submit jobs via Slurm? (y/n)
-  - If yes, you must provide the full path to your Slurm submission file; it will be copied into the run directory as `columbus.slurm`.
-  - The script will use sbatch to submit `columbus.slurm` and poll the job queue until completion when Slurm is selected.
-  - If no, the script invokes $COLUMBUS/runc locally.
+  - If yes, the script displays important validation reminders:
+    - Verify the Slurm file is on the cluster/workstation you're using.
+    - Check that your email address is correct.
+    - Ensure core and memory requests are appropriate.
+    - Verify other Slurm parameters (timing, account, etc.) are set correctly.
+  - You must then provide the full path to your Slurm submission file; it will be copied into the Scripts directory as `columbus.slurm`.
+  - The script will use `sbatch` to submit jobs when Slurm is selected.
+  - If no, the script invokes `$COLUMBUS/runc` locally.
 
 8) Per-multiplicity job options (for each selected multiplicity)
 - For each multiplicity (Singlet and/or Triplet) you will be asked:
