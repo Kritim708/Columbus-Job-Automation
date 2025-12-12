@@ -46,42 +46,6 @@ cd ./Scripts || { echo "❌ Scripts directory not found!"; exit 1; }
 # Check for existing .xyz files in the current directory
 xyz_files=(*.xyz)
 
-#if [ -e "${xyz_files[0]}" ]; then
-#    echo "Found existing .xyz file(s) in the directory:"
-#    select xyz_choice in "${xyz_files[@]}" "Import a new .xyz file"; do
-#        if [ "$xyz_choice" = "Import a new .xyz file" ]; then
-#            while true; do
-#                read -p "Enter the full path to your '.xyz' file: " xyz_path
-#                if [ -f "$xyz_path" ]; then
-#                    cp "$xyz_path" .
-#                    echo "$(basename "$xyz_path") copied to Scripts directory."
-#                    break
-#                else
-#                    echo "File not found at '$xyz_path'. Please try again."
-#                fi
-#            done
-#            break
-#        elif [ -n "$xyz_choice" ]; then
-#            echo "Using existing file: $xyz_choice"
-#            break
-#        else
-#            echo "Invalid selection. Please try again."
-#        fi
-#    done
-#else
-#    # No existing .xyz files, prompt for import
-#    while true; do
-#       read -p "Enter the full path to your '.xyz' file: " xyz_path
-#        if [ -f "$xyz_path" ]; then
-#            cp "$xyz_path" .
-#            echo "$(basename "$xyz_path") copied to Scripts directory."
-#            break
-#        else
-#            echo "File not found at '$xyz_path'. Please try again."
-#        fi
-#    done
-#fi
-#sleep 1
 if [ -e "${xyz_files[0]}" ]; then
     echo "Found existing .xyz file(s) in the directory:"
     select xyz_choice in "${xyz_files[@]}" "Import a new .xyz file"; do
@@ -143,36 +107,47 @@ fi
 # Step 1: Go to Scripts directory and run input.sh
 #==============================================
 
-echo -e "\n\nProvide parameters for Columbus job \n==========================="
+while true; do
+    echo -e "\nProvide parameters for Columbus job\n==========================="
 
-# Check if input_values.txt exists
-if [ -f input_values.txt ]; then
-    echo "⚙️  input_values.txt already exists."
-    read -p "Do you want to use the existing values? (y/n): " use_existing
+    # Build menu
+    options=(); actions=()
+    [ -f input_values.txt ] && { options+=("Use existing input_values.txt"); actions+=("use_existing"); }
+    options+=("Import DRT.xlsx"); actions+=("import_drt")
+    options+=("Manually enter input values (input.sh)"); actions+=("manual")
 
-    if [[ "$use_existing" =~ ^[Yy]$ ]]; then
-        echo "✅ Using existing input_values.txt..."
-    else
-        echo "🔁 Running input.sh to create new input values..."
-        if [ -f input.sh ]; then
-            bash input.sh
-        else
-            echo "❌ input.sh not found in Scripts directory!"
-            exit 1
-        fi
-    fi
-else
-    echo "🆕 input_values.txt not found. Running input.sh..."
-    if [ -f input.sh ]; then
-        bash input.sh
-    else
-        echo "❌ input.sh not found in Scripts directory!"
-        exit 1
-    fi
-fi
+    echo "Select an option:"
+    for i in "${!options[@]}"; do echo "  $((i+1))) ${options[$i]}"; done
+    echo ""
+    read -p "Enter choice number: " idx
+    idx=$((idx-1))
 
-# Write the columbus directory to input_values
+    [ -z "${actions[$idx]}" ] && { echo "❌ Invalid choice."; continue; }
+
+    case "${actions[$idx]}" in
+        use_existing)
+            echo "✅ Using existing input_values.txt..."
+            break
+            ;;
+
+        import_drt)
+            read -p "Enter directory for DRT.xlsx (blank=default): " drt_dir
+            echo "➡️ Running parse_drt.py..."
+            [ -z "$drt_dir" ] && python3 Scripts/parse_drt.py || python3 Scripts/parse_drt.py "$drt_dir"
+            [ $? -ne 0 ] && { echo "❌ parse_drt.py failed! Returning to menu..."; continue; }
+            break
+            ;;
+
+        manual)
+            echo "📝 Running input.sh..."
+            [ -f input.sh ] && bash input.sh || { echo "❌ input.sh not found!"; continue; }
+            break
+            ;;
+    esac
+done
+
 echo "set COLUMBUS $COLUMBUS" >> input_values.txt
+echo "✔️ Added COLUMBUS path to input_values.txt"
 
 
 #==============================================
@@ -469,22 +444,6 @@ for multiplicity in "${multiplicities[@]}"; do
     echo "PID ($multiplicity): $pid"
 done
 
-
-
-
-#for singlet_triplet_var in "${multiplicities[@]}"; do
-#    if [ "$singlet_triplet_var" == "Singlet" ]; then
-#        echo "➡️ Starting Singlet run..."
-#        ./run.sh "$calculation_set" 1 "$run_mcscf_singlet" "$run_cisd_singlet" "$run_aqcc_singlet" "$run_parallel" "$mcscf_mem_singlet" "$cisd_mem_singlet" "$aqcc_mem_singlet" "$COLUMBUS"&
-#        singlet_pid=$!
-#        echo "🧬 Singlet PID: $singlet_pid"
-#    elif [ "$singlet_triplet_var" == "Triplet" ]; then
-#        echo "➡️ Starting Triplet run..."
-#        ./run.sh "$calculation_set" 3 "$run_mcscf_triplet" "$run_cisd_triplet" "$run_aqcc_triplet" "$run_parallel" "$mcscf_mem_triplet" "$cisd_mem_triplet" "$aqcc_mem_triplet" "$COLUMBUS"&
-#        triplet_pid=$!
-#        echo "⚛️ Triplet PID: $triplet_pid"
-#    fi
-#done
 
 # Wait for completion and log status
 if [ -n "$singlet_pid" ]; then

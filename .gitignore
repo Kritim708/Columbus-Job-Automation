@@ -6,6 +6,7 @@ Columbus/*
 Scripts/*
 !Scripts/*.exp
 !Scripts/*.sh
+!Scripts/*.py
 !Scripts/columbus.slurm
 
 # Track log.out in the current directory
