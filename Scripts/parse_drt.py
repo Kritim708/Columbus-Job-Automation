@@ -98,9 +98,10 @@ def main():
     try:
         point_group = extract_point_group(df.iloc[0, 0])
         num_electrons = int(df.iloc[18, 2])
-        multiplicity = df.iloc[18, 1]
-        spin_state = extract_spin_from_multiplicity(multiplicity)
-        spatial_symmetry = extract_symmetry(df.iloc[18, 3])
+        #multiplicity = df.iloc[18, 1]
+        #spin_state = extract_spin_from_multiplicity(multiplicity)
+        spatial_symmetry_triplet = extract_symmetry(df.iloc[18, 3])
+        spatial_symmetry_singlet = extract_symmetry(df.iloc[23, 3])
         num_unique_atoms = int(df.iloc[18, 4])
 
         # Orbital vectors
@@ -126,11 +127,11 @@ def main():
     out_lines.append("#======================")
     out_lines.append(f"set num_unique_atoms {num_unique_atoms}")
     out_lines.append(f'set group_symmetry "{point_group}"')
-    out_lines.append(f"set spatial_symmetry {spatial_symmetry}")
+    out_lines.append(f"set triplet_spatial_symmetry {spatial_symmetry_triplet}")
+    out_lines.append(f"set singlet_spatial_symmetry {spatial_symmetry_singlet}")
     out_lines.append("")
     out_lines.append("# FROM DRT TABLE")
     out_lines.append("#===========================")
-    out_lines.append(f'set spin_state "{spin_state}"')
     out_lines.append(f"set num_electrons {num_electrons}")
     out_lines.append(f'set scf_docc "{scf_docc}"')
     out_lines.append(f'set scf_opsh "{scf_opsh}"')
