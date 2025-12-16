@@ -3,11 +3,10 @@ Columbus/*
 !Columbus/.gitkeep
 
 # Scripts folder: ignore everything except scripts and columbus.slurm
-Scripts/*
-!Scripts/*.exp
-!Scripts/*.sh
-!Scripts/*.py
-!Scripts/columbus.slurm
+Scripts/*.txt
+Scripts/*.xyz
+Scripts/*.log
+!Scripts/input_values.txt
 
 # Track log.out in the current directory
 log.out

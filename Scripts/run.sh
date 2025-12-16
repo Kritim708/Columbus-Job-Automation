@@ -13,6 +13,7 @@ source "$CONFIG_FILE"
 # Select parameters depending on multiplicity
 if [ "$multiplicity" = "Singlet" ]; then
     spin=1
+    spatial_symmetry=$singlet_spatial_symmetry
     run_mcscf=$run_mcscf_singlet
     run_cisd=$run_cisd_singlet
     run_aqcc=$run_aqcc_singlet
@@ -22,6 +23,7 @@ if [ "$multiplicity" = "Singlet" ]; then
 
 elif [ "$multiplicity" = "Triplet" ]; then
     spin=3
+    spatial_symmetry=$triplet_spatial_symmetry
     run_mcscf=$run_mcscf_triplet
     run_cisd=$run_cisd_triplet
     run_aqcc=$run_aqcc_triplet
