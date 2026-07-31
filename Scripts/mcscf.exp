@@ -18,6 +18,7 @@ source $input_file
 
 
 
+
 #===========================
 # STARTING COLINP
 #===========================
@@ -63,28 +64,38 @@ send "\r"
 
 
 
-# Send the key the number of times equal to unique atoms
-# Loop through each unique atom prompt
 for {set i 0} {$i < $num_unique_atoms} {incr i} {
-
-    # Wait for the prompt line like: "Select the basis set for atom S:"
     expect {
         -re {Select the basis set for atom ([A-Za-z]+):} {
             set atom $expect_out(1,string)
+            set menu_text $expect_out(buffer)
+
             send_user "→ Selecting basis for atom: $atom\n"
 
-            # Default key to send
-            set send_key $calculation_set
-
-            # Exception: if basis is cc-pvtz (key 6) and atom is H, use 7 instead
-            if { $calculation_set == 6 && $atom eq "H" } {
-                set send_key 7
+            # Decide which basis family to look for based on calculation_set
+            switch -- $calculation_set {
+                1 { set target_basis {cc-pvdz} }
+                6 { set target_basis {cc-pvtz} }
+                default { set target_basis {} }
             }
 
-            # Send the chosen key and Enter
-            send "$send_key\r"
+            set send_key ""
+            if {$target_basis ne ""} {
+                # Match a line like " 7:   cc-pvtz(5s,2p,1d)->..."
+                # The \s+ right after the colon must be followed directly
+                # by the target string + "(" -- this excludes aug-/d-aug-/diffuse variants
+                if {[regexp -line "^\\s*(\\d+):\\s+$target_basis\\(" $menu_text -> matched_num]} {
+                    set send_key $matched_num
+                } else {
+                    send_user "⚠️ Could not find '$target_basis' in menu for atom $atom -- falling back to $calculation_set\n"
+                    set send_key $calculation_set
+                }
+            } else {
+                set send_key $calculation_set
+            }
 
-            # Small delay for stability
+            send_user "   → sending option $send_key for $atom\n"
+            send "$send_key\r"
             sleep 0.5
         }
         timeout {
@@ -93,7 +104,6 @@ for {set i 0} {$i < $num_unique_atoms} {incr i} {
         }
     }
 }
-
 
 # Step 7: After selecting the basis sets, reorder geom file
 expect {
@@ -282,7 +292,7 @@ if { $mcscf_iter == 100 || $mcscf_iter == -1 } {
 send "\u001b\[A"     ;# Press Up Arrow
 send "Y\r"           ;# Finished
 
-
+interact
 # Step 30: Set up job control
 expect {
     "main menu options" {
@@ -347,7 +357,7 @@ send "4\r"
 # Step 38: Exiting from the menu
 send "7\r"
 
-sleep 10
+sleep 3
 
 
 # Continue automation or hand control back to user
