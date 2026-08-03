@@ -1,320 +1,168 @@
 #!/bin/bash
 
-#==============================================
-# Step 0: Import parameters
-#==============================================
+set -euo pipefail
 
-multiplicity=$1   # "Singlet" or "Triplet"
-CONFIG_FILE="config.txt"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/config.txt"
+BASE_INPUT="$SCRIPT_DIR/input_values.txt"
 
-# Load config file as shell variables
-source "$CONFIG_FILE"
+usage() {
+    cat <<EOF
+Usage:
+    $(basename "$0") -mcscf|-cisd-ser|-cisd-par|-aqcc-ser|-aqcc-par \
+        -singlet|-triplet -dz|-tz [-m MB] [-nproc COUNT] [optional values]
 
-# Select parameters depending on multiplicity
-if [ "$multiplicity" = "Singlet" ]; then
-    spin=1
-    spatial_symmetry=$singlet_spatial_symmetry
-    run_mcscf=$run_mcscf_singlet
-    run_cisd=$run_cisd_singlet
-    run_aqcc=$run_aqcc_singlet
-    mcscf_mem=$mcscf_mem_singlet
-    cisd_mem=$cisd_mem_singlet
-    aqcc_mem=$aqcc_mem_singlet
+This command prepares Columbus input files only. It never runs runc or Slurm.
+Defaults: memory=4000, iterations=-1, optimization_cycles=-1,
+parallel cores=4, memory per core=750, bandwidth=50, processors per node=4,
+core memory=20000. Optional flags: -mcscf-iter, -mcscf-opt-iter,
+-cisd-iter, -cisd-opt-iter, -aqcc-iter, -aqcc-opt-iter, -mem-per-core,
+-bandwidth, -ppn, and -core-memory.
+EOF
+}
 
-elif [ "$multiplicity" = "Triplet" ]; then
-    spin=3
-    spatial_symmetry=$triplet_spatial_symmetry
-    run_mcscf=$run_mcscf_triplet
-    run_cisd=$run_cisd_triplet
-    run_aqcc=$run_aqcc_triplet
-    mcscf_mem=$mcscf_mem_triplet
-    cisd_mem=$cisd_mem_triplet
-    aqcc_mem=$aqcc_mem_triplet
+fail() {
+    echo "Error: $*" >&2
+    exit 2
+}
+
+require_value() {
+    [ "$#" -ge 2 ] || fail "$1 requires a value."
+}
+
+[ -f "$BASE_INPUT" ] || fail "Run './main.sh initialize' first; Scripts/input_values.txt is missing."
+
+stage=""
+spin_name=""
+basis=""
+memory=4000
+nproc=4
+mcscf_iter=-1
+mcscf_opt_iter=-1
+cisd_iter=-1
+cisd_opt_iter=-1
+aqcc_iter=-1
+aqcc_opt_iter=-1
+mem_per_core=750
+bandwidth=50
+processor_per_node=4
+core_memory=20000
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -mcscf) stage="MCSCF"; shift ;;
+        -cisd-ser) stage="CISD"; run_mode="ser"; shift ;;
+        -cisd-par) stage="CISD"; run_mode="par"; shift ;;
+        -aqcc-ser) stage="AQCC"; run_mode="ser"; shift ;;
+        -aqcc-par) stage="AQCC"; run_mode="par"; shift ;;
+        -singlet) spin_name="Singlet"; shift ;;
+        -triplet) spin_name="Triplet"; shift ;;
+        -dz) basis="DZ"; calculation_set=1; shift ;;
+        -tz) basis="TZ"; calculation_set=6; shift ;;
+        -m)
+            [ "$#" -ge 2 ] || fail "-m requires a value."
+            memory="$2"
+            shift 2
+            ;;
+        -nproc)
+            [ "$#" -ge 2 ] || fail "-nproc requires a value."
+            nproc="$2"
+            shift 2
+            ;;
+        -mcscf-iter) require_value "$1" "$@"; mcscf_iter="$2"; shift 2 ;;
+        -mcscf-opt-iter) require_value "$1" "$@"; mcscf_opt_iter="$2"; shift 2 ;;
+        -cisd-iter) require_value "$1" "$@"; cisd_iter="$2"; shift 2 ;;
+        -cisd-opt-iter) require_value "$1" "$@"; cisd_opt_iter="$2"; shift 2 ;;
+        -aqcc-iter) require_value "$1" "$@"; aqcc_iter="$2"; shift 2 ;;
+        -aqcc-opt-iter) require_value "$1" "$@"; aqcc_opt_iter="$2"; shift 2 ;;
+        -mem-per-core) require_value "$1" "$@"; mem_per_core="$2"; shift 2 ;;
+        -bandwidth) require_value "$1" "$@"; bandwidth="$2"; shift 2 ;;
+        -ppn) require_value "$1" "$@"; processor_per_node="$2"; shift 2 ;;
+        -core-memory) require_value "$1" "$@"; core_memory="$2"; shift 2 ;;
+        -h|--help) usage; exit 0 ;;
+        *) fail "Unknown option '$1'." ;;
+    esac
+done
+
+[ -n "$stage" ] || fail "Choose one stage option."
+[ -n "$spin_name" ] || fail "Choose -singlet or -triplet."
+[ -n "$basis" ] || fail "Choose -dz or -tz."
+[ "$stage" = "MCSCF" ] && run_mode="ser"
+[[ "$memory" =~ ^[0-9]+$ ]] || fail "Memory must be a non-negative integer."
+[[ "$nproc" =~ ^[1-9][0-9]*$ ]] || fail "-nproc must be a positive integer."
+
+if [ -f "$CONFIG_FILE" ]; then
+    COLUMBUS="$(awk -F= '/^COLUMBUS=/ { sub(/\r$/, "", $2); print $2; exit }' "$CONFIG_FILE")"
+fi
+[ -n "${COLUMBUS:-}" ] || fail "COLUMBUS is not configured; run './main.sh initialize'."
+
+source_input="$ROOT_DIR/Columbus/$basis/$spin_name/input_values.txt"
+if [ -f "$source_input" ]; then
+    base_input="$source_input"
 else
-    echo "Error: multiplicity must be Singlet or Triplet"
-    exit 1
+    base_input="$BASE_INPUT"
 fi
 
-echo "Running $multiplicity"
-echo "Run MCSCF: $run_mcscf"
-echo "Run CISD:  $run_cisd"
-echo "Run AQCC:  $run_aqcc"
-echo "Mem MCSCF: $mcscf_mem"
-echo "Mem CISD:  $cisd_mem"
-echo "Mem AQCC:  $aqcc_mem"
+prep_dir="$ROOT_DIR/Columbus/$basis/$spin_name/$stage-prep"
+mkdir -p "$prep_dir"
+rm -f "$prep_dir"/*
+cp "$SCRIPT_DIR/geom" "$prep_dir/"
+cp "$base_input" "$prep_dir/input_values.base.txt"
 
-
-#==============================================
-# Step 1: Determine Calculation Set
-#==============================================
-
-if [ "$calculation_set" -eq 1 ]; then
-    calculation_set_var="DZ"
-elif [ "$calculation_set" -eq 6 ]; then
-    calculation_set_var="TZ"
+if [ "$spin_name" = "Singlet" ]; then
+    singlet_triplet_num=1
+    high_spin=no
 else
-    calculation_set_var="Unknown"
+    singlet_triplet_num=3
+    high_spin=yes
 fi
 
-if [[ "$run_parallel" =~ ^[Yy]$ ]]; then
-    run_mode="par"
-else
-    run_mode="ser"
-fi
+input_file="$prep_dir/input_values.txt"
+{
+    cat "$base_input"
+    echo ""
+    echo "# Generated preparation values"
+    echo "set COLUMBUS \"$COLUMBUS\""
+    echo "set calculation_set $calculation_set"
+    echo "set singlet_triplet_num $singlet_triplet_num"
+    echo "set high_spin $high_spin"
+    echo "set mcscf_iter $mcscf_iter"
+    echo "set mcscf_opt_iter $mcscf_opt_iter"
+    echo "set cisd_iter $cisd_iter"
+    echo "set cisd_opt_iter $cisd_opt_iter"
+    echo "set aqcc_iter $aqcc_iter"
+    echo "set aqcc_opt_iter $aqcc_opt_iter"
+    echo "set mcscf_mem $memory"
+    echo "set cisd_mem $memory"
+    echo "set aqcc_mem $memory"
+    echo "set ncores $nproc"
+    echo "set mem_per_core $mem_per_core"
+    echo "set bandwidth $bandwidth"
+    echo "set processor_per_node $processor_per_node"
+    echo "set core_memory $core_memory"
+} > "$input_file"
 
-#==============================================
-# Step 2: Redirect all output to log file
-#==============================================
-LOG_FILE="../Columbus/$calculation_set_var/$multiplicity/log.out"
-exec > >(tee -a "$LOG_FILE") 2>&1
+case "$stage" in
+    MCSCF)
+        cp "$SCRIPT_DIR/mcscf.exp" "$prep_dir/"
+        (cd "$prep_dir" && expect ./mcscf.exp)
+        ;;
+    CISD)
+        [ -d "$ROOT_DIR/Columbus/$basis/$spin_name/MCSCF-prep" ] || fail "MCSCF-prep directory is missing."
+        cp -a "$ROOT_DIR/Columbus/$basis/$spin_name/MCSCF-prep/." "$prep_dir/"
+        cp "$input_file" "$prep_dir/input_values.txt"
+        cp "$SCRIPT_DIR/cisd-$run_mode.exp" "$prep_dir/"
+        (cd "$prep_dir" && expect "./cisd-$run_mode.exp")
+        ;;
+    AQCC)
+        [ -d "$ROOT_DIR/Columbus/$basis/$spin_name/CISD-prep" ] || fail "CISD-prep directory is missing."
+        cp -a "$ROOT_DIR/Columbus/$basis/$spin_name/CISD-prep/." "$prep_dir/"
+        cp "$input_file" "$prep_dir/input_values.txt"
+        cp "$SCRIPT_DIR/aqcc-$run_mode.exp" "$prep_dir/"
+        (cd "$prep_dir" && expect "./aqcc-$run_mode.exp")
+        ;;
+esac
 
-#==============================================
-# Step 3: Go back one directory
-#==============================================
-cd .. || exit 1
-
-#==============================================
-# Step 4–9: MCSCF stage (conditional)
-#==============================================
-if [[ "$run_mcscf" =~ ^[Yy]$ ]]; then
-    echo "➡️ Starting MCSCF stage..."
-
-
-    # CREATE DIRECTORY
-    dir="./Columbus/$calculation_set_var/$multiplicity/MCSCF"
-    mkdir -p "$dir"
-
-    #Check if the calculations are already performed; override if user allows
-    [ "$(ls -A "$dir")" ] && read -p "Directory '$dir' contains files. Override? (y/N): " choice && [[ "$choice" =~ ^[Yy]$ ]] && rm -rf "$dir"/* || { [ "$(ls -A "$dir")" ] && echo "Keeping existing contents. Exiting." && exit 0; }
-    echo "Ready to use '$dir'"
-
-    cp ./Columbus/$calculation_set_var/$multiplicity/input_values.txt ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
-    cp ./Scripts/mcscf.exp ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
-    cp ./Scripts/geom ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
-    if [ "$use_slurm" = "yes" ]; then
-        cp ./Scripts/columbus.slurm ./Columbus/$calculation_set_var/$multiplicity/MCSCF/
-    fi
-
-
-    cd ./Columbus/$calculation_set_var/$multiplicity/MCSCF || { echo "MCSCF directory not found!"; exit 1; }
-
-    # module load columbus/722
-    if [ -f mcscf.exp ]; then
-        echo "Running mcscf.exp..."
-        expect ./mcscf.exp
-    else
-        echo "❌ mcscf.exp not found!"
-        exit 1
-    fi
-
-    echo "Running Columbus runc..."
-    if [ "$use_slurm" != "yes" ]; then
-        $COLUMBUS/runc -m $mcscf_mem > runls &
-        runc_pid=$!
-        echo "runc PID: $runc_pid"
-        wait $runc_pid
-        echo "runc finished."
-    else
-        # Submit the Slurm job and wait until it completes
-        slurm_job_id=$(sbatch ./columbus.slurm | awk '{print $4}')
-        echo "Slurm job submitted with Job ID: $slurm_job_id"
-
-        # Wait for the Slurm job to finish
-        while true; do
-            job_state=$(squeue -j $slurm_job_id -h -o "%T")
-            if [ -z "$job_state" ]; then
-                # Job no longer in queue, assumed finished
-                break
-            fi
-            sleep 5  # check every 5 seconds
-        done
-
-        echo "Slurm job $slurm_job_id finished."
-    fi
-
-
-    cp MOCOEFS/mocoef_mc.sp mocoef
-    cd ../../../..
-else
-    echo "⏩ Skipping MCSCF stage."
-fi
-
-#==============================================
-# Step 10–15: CISD stage (conditional)
-#==============================================
-if [[ "$run_cisd" =~ ^[Yy]$ ]]; then
-    echo "➡️ Starting CISD stage..."
-
-    cd ./Columbus/$calculation_set_var/$multiplicity/ || exit 1
-
-
-    # CREATE DIRECTORY
-    dir="./CI"
-    mkdir -p "$dir"
-
-    #Check if the calculations are already performed; override if user allows
-    [ "$(ls -A "$dir")" ] && read -p "Directory '$dir' contains files. Override? (y/N): " choice && [[ "$choice" =~ ^[Yy]$ ]] && rm -rf "$dir"/* || { [ "$(ls -A "$dir")" ] && echo "Keeping existing contents. Exiting." && exit 0; }
-    echo "Ready to use '$dir'"
-
-
-    cp ./input_values.txt ./CI/
-    cp ./MCSCF/* ./CI/
-    cp ../../../Scripts/cisd-$run_mode.exp ./CI/
-    if [ "$use_slurm" = "yes" ]; then
-        cp ../../../Scripts/columbus.slurm ./Columbus/$calculation_set_var/$multiplicity/CI/
-    fi
-
-    cd ./CI || { echo "CI directory not found!"; exit 1; }
-
-    # module load columbus/722
-    if [ -f cisd-$run_mode.exp ]; then
-        echo "Running cisd-$run_mode.exp..."
-
-        while true; do
-            expect ./cisd-$run_mode.exp
-
-            # Check last two lines of runc.error
-            if [ -f runc.error ]; then
-                last_lines=$(tail -n 2 runc.error)
-                if echo "$last_lines" | grep -q "not enough memory" && echo "$last_lines" | grep -q "pscript failed"; then
-                    echo "  Memory error detected — rerunning expect script..."
-                    sleep 2   # optional short delay before retry
-                    continue
-                fi
-            fi
-
-            # If memory error not detected, break the loop
-            break
-        done
-
-    else
-        echo "❌ cisd-$run_mode.exp not found!"
-        exit 1
-    fi
-
-    echo "✅ cisd-$run_mode.exp finished successfully"    
-
-
-    echo "Running Columbus runc..."
-    if [ "$use_slurm" != "yes" ]; then
-        $COLUMBUS/runc -m $cisd_mem > runls &
-        runc_pid=$!
-        echo "runc PID: $runc_pid"
-        wait $runc_pid
-        echo "runc finished."
-    else
-        # Submit the Slurm job and wait until it completes
-        slurm_job_id=$(sbatch ./columbus.slurm | awk '{print $4}')
-        echo "Slurm job submitted with Job ID: $slurm_job_id"
-
-        # Wait for the Slurm job to finish
-        while true; do
-            job_state=$(squeue -j $slurm_job_id -h -o "%T")
-            if [ -z "$job_state" ]; then
-                # Job no longer in queue, assumed finished
-                break
-            fi
-            sleep 5  # check every 5 seconds
-        done
-
-        echo "Slurm job $slurm_job_id finished."
-    fi
-
-    cd ../../../..
-else
-    echo "⏩ Skipping CISD stage."
-fi
-
-#==============================================
-# Step 16–END: AQCC stage (conditional)
-#==============================================
-
-if [[ "$run_aqcc" =~ ^[Yy]$ ]]; then
-    echo "➡️ Starting AQCC stage..."
-
-    cd ./Columbus/$calculation_set_var/$multiplicity/ || exit 1
-    
-    
-    # CREATE DIRECTORY
-    dir="./AQCC"
-    mkdir -p "$dir"
-
-    #Check if the calculations are already performed; override if user allows
-    [ "$(ls -A "$dir")" ] && read -p "Directory '$dir' contains files. Override? (y/N): " choice && [[ "$choice" =~ ^[Yy]$ ]] && rm -rf "$dir"/* || { [ "$(ls -A "$dir")" ] && echo "Keeping existing contents. Exiting." && exit 0; }
-    echo "Ready to use '$dir'"
-
-    
-    
-    cp ./input_values.txt ./AQCC/
-    cp ./CI/* ./AQCC/
-    cp ../../../Scripts/aqcc-$run_mode.exp ./AQCC/
-    if [ "$use_slurm" = "yes" ]; then
-        cp ../../../Scripts/columbus.slurm ./Columbus/$calculation_set_var/$multiplicity/AQCC/
-    fi
-
-    cd ./AQCC || { echo "AQCC directory not found!"; exit 1; }
-    echo "Before AQCC Columbus is: $COLUMBUS"
-    # module load columbus/722
-    echo "Before AQCC Columbus is: $COLUMBUS"
-    if [ -f aqcc-$run_mode.exp ]; then
-        echo "Running aqcc-$run_mode.exp..."
-        
-        while true; do
-            expect ./aqcc-$run_mode.exp
-
-            # Check last two lines of runc.error
-            if [ -f runc.error ]; then
-                last_lines=$(tail -n 2 runc.error)
-                if echo "$last_lines" | grep -q "not enough memory" && echo "$last_lines" | grep -q "pscript failed"; then
-                    echo "⚠️ Memory error detected — rerunning expect script..."
-                    sleep 2   # optional short delay before retry
-                    continue
-                fi
-            fi
-
-            # If memory error not detected, break the loop
-            break
-        done
-
-    else
-        echo "❌ aqcc-$run_mode.exp not found!"
-        exit 1
-    fi
-
-    echo "✅ aqcc-$run_mode.exp finished successfully"
-
-
-    echo "Running Columbus runc..."
-    if [ "$use_slurm" != "yes" ]; then
-        $COLUMBUS/runc -m $aqcc_mem > runls &
-        runc_pid=$!
-        echo "runc PID: $runc_pid"
-        wait $runc_pid
-        echo "runc finished."
-    else
-        # Submit the Slurm job and wait until it completes
-        slurm_job_id=$(sbatch ./columbus.slurm | awk '{print $4}')
-        echo "Slurm job submitted with Job ID: $slurm_job_id"
-
-        # Wait for the Slurm job to finish
-        while true; do
-            job_state=$(squeue -j $slurm_job_id -h -o "%T")
-            if [ -z "$job_state" ]; then
-                # Job no longer in queue, assumed finished
-                break
-            fi
-            sleep 5  # check every 5 seconds
-        done
-
-        echo "Slurm job $slurm_job_id finished."
-    fi
-
-
-    echo "✅ AQCC stage completed successfully."
-else
-    echo "⏩ Skipping AQCC stage."
-fi
-
-#==============================================
-echo "🎉 All selected stages completed successfully."
-#==============================================
+echo "Input files prepared in $prep_dir"
+echo "No Columbus calculation was started."
