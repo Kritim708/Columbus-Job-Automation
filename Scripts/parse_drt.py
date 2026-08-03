@@ -97,12 +97,14 @@ def main():
     # --------------------------------------------
     try:
         point_group = extract_point_group(df.iloc[0, 0])
+        print("Extracted point group:", point_group)
         num_electrons = int(df.iloc[18, 2])
+        print("Extracted number of electrons:", num_electrons)
         #multiplicity = df.iloc[18, 1]
         #spin_state = extract_spin_from_multiplicity(multiplicity)
         spatial_symmetry_triplet = extract_symmetry(df.iloc[18, 3])
-        spatial_symmetry_singlet = extract_symmetry(df.iloc[23, 3])
-        num_unique_atoms = int(df.iloc[18, 4])
+        spatial_symmetry_singlet = extract_symmetry(df.iloc[24, 3])
+        # num_unique_atoms = int(df.iloc[19, 4])
 
         # Orbital vectors
         scf_docc   = parse_row_values(df.iloc[3],  col_indices)
@@ -125,7 +127,7 @@ def main():
     out_lines.append("#======================")
     out_lines.append("# INPUT VALUES")
     out_lines.append("#======================")
-    out_lines.append(f"set num_unique_atoms {num_unique_atoms}")
+    # out_lines.append(f"set num_unique_atoms {num_unique_atoms}")
     out_lines.append(f'set group_symmetry "{point_group}"')
     out_lines.append(f"set triplet_spatial_symmetry {spatial_symmetry_triplet}")
     out_lines.append(f"set singlet_spatial_symmetry {spatial_symmetry_singlet}")
