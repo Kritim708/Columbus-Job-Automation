@@ -1,0 +1,476 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$SELF_DIR"
+if command -v git >/dev/null 2>&1 && git -C "$SELF_DIR" rev-parse --show-toplevel >/dev/null 2>&1; then
+    REPO_ROOT="$(git -C "$SELF_DIR" rev-parse --show-toplevel 2>/dev/null)"
+fi
+SCRIPTS_DIR="$REPO_ROOT/Scripts"
+TARGET_DIR="$(pwd)"
+TARGET_INPUT="$TARGET_DIR/input_values.txt"
+
+stage=""
+basis=""
+multiplicity=""
+run_parallel="no"
+dry_run="no"
+input_source=""
+columbus_path="${COLUMBUS:-}"
+
+declare -A override_values
+
+usage() {
+    cat <<EOF
+Usage: create_files [options]
+
+Options:
+  --stage <MCSCF|CISD|AQCC>       Force stage detection rather than using current directory.
+  --basis <DZ|TZ>                Force basis set detection.
+  --multiplicity <Singlet|Triplet>  Force multiplicity detection.
+  --parallel                     Use parallel preparation mode for CISD/AQCC.
+  --serial                       Use sequential mode for CISD/AQCC.
+  --input-file <path>            Copy an existing input values file into this folder.
+  --columbus <path>              Columbus installation directory.
+  --mcscf-iter <n>               Override MCSCF iterations.
+  --mcscf-opt <n>                Override MCSCF optimization cycles.
+  --cisd-iter <n>                Override CISD iterations.
+  --cisd-opt <n>                 Override CISD optimization cycles.
+  --aqcc-iter <n>                Override AQCC iterations.
+  --aqcc-opt <n>                 Override AQCC optimization cycles.
+  --ncores <n>                   Parallel core count.
+  --mem-per-core <n>             Parallel memory per core.
+  --bandwidth <n>                Parallel bandwidth.
+  --processor-per-node <n>       Parallel processors per node.
+  --core-memory <n>              Parallel core memory.
+  --dry-run                      Prepare files and copy the expect script, but do not run it.
+  -h, --help                     Show this help message.
+EOF
+}
+
+normalize_stage() {
+    local value="${1:-}"
+    case "${value,,}" in
+        mcs*|mcscf) echo "MCSCF" ;;
+        cis*) echo "CISD" ;;
+        aq*) echo "AQCC" ;;
+        *) echo "" ;;
+    esac
+}
+
+normalize_basis() {
+    local value="${1:-}"
+    case "${value,,}" in
+        dz|cc-pvdz) echo "DZ" ;;
+        tz|cc-pvtz) echo "TZ" ;;
+        *) echo "" ;;
+    esac
+}
+
+normalize_spin() {
+    local value="${1:-}"
+    case "${value,,}" in
+        1|singlet) echo "Singlet" ;;
+        3|triplet) echo "Triplet" ;;
+        *) echo "" ;;
+    esac
+}
+
+prompt_for_value() {
+    local prompt="$1" default="$2"
+    local value
+    if [ -t 0 ]; then
+        if [ -n "$default" ]; then
+            read -r -p "$prompt [$default]: " value
+            value="${value:-$default}"
+        else
+            read -r -p "$prompt: " value
+        fi
+    else
+        value="$default"
+    fi
+    echo "$value"
+}
+
+append_setting() {
+    local name="$1" value="$2"
+    [ -z "$value" ] && return
+    if [[ "$value" =~ [[:space:]] ]]; then
+        value="\"$value\""
+    fi
+    printf 'set %s %s\n' "$name" "$value" >> "$TARGET_INPUT"
+}
+
+set_or_append_setting() {
+    local name="$1" value="$2"
+    [ -z "$value" ] && return
+    if [[ "$value" =~ [[:space:]] ]]; then
+        value="\"$value\""
+    fi
+    if grep -qE "^set[[:space:]]+$name[[:space:]]+" "$TARGET_INPUT" 2>/dev/null; then
+        local tmp_file
+        tmp_file="$(mktemp)"
+        sed -E "s/^set[[:space:]]+$name[[:space:]]+.*/set $name $value/" "$TARGET_INPUT" > "$tmp_file"
+        mv "$tmp_file" "$TARGET_INPUT"
+    else
+        append_setting "$name" "$value"
+    fi
+}
+
+split_path_segments() {
+    local path="$1"
+    path="${path//\\//\/}"
+    printf '%s' "$path" | tr '/' '\n'
+}
+
+find_stage_from_path() {
+    local path="${TARGET_DIR}"
+    path="${path,,}"
+    while IFS= read -r segment; do
+        case "$segment" in
+            mcscf-prep) echo "MCSCF"; return ;;
+            cisd-prep) echo "CISD"; return ;;
+            aqcc-prep) echo "AQCC"; return ;;
+        esac
+    done < <(split_path_segments "$path")
+    echo ""
+}
+
+find_basis_from_path() {
+    local path="${TARGET_DIR}"
+    path="${path,,}"
+    while IFS= read -r segment; do
+        case "$segment" in
+            dz) echo "DZ"; return ;;
+            tz) echo "TZ"; return ;;
+            cc-pvdz) echo "DZ"; return ;;
+            cc-pvtz) echo "TZ"; return ;;
+        esac
+    done < <(split_path_segments "$path")
+    echo ""
+}
+
+find_spin_from_path() {
+    local path="${TARGET_DIR}"
+    path="${path,,}"
+    while IFS= read -r segment; do
+        case "$segment" in
+            singlet) echo "Singlet"; return ;;
+            triplet) echo "Triplet"; return ;;
+        esac
+    done < <(split_path_segments "$path")
+    echo ""
+}
+
+get_stage_requirements() {
+    case "$stage" in
+        MCSCF)
+            echo "geom" ;;
+        CISD)
+            echo "mocoef" ;;
+        AQCC)
+            echo "CI" ;;
+        *)
+            echo "" ;;
+    esac
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --stage)
+            stage="$(normalize_stage "$2")"
+            shift 2
+            ;;
+        --basis|-b)
+            basis="$(normalize_basis "$2")"
+            shift 2
+            ;;
+        --multiplicity|--spin)
+            multiplicity="$(normalize_spin "$2")"
+            shift 2
+            ;;
+        --parallel|-P)
+            run_parallel="yes"
+            shift
+            ;;
+        --serial|-S)
+            run_parallel="no"
+            shift
+            ;;
+        --input-file|-i)
+            input_source="$2"
+            shift 2
+            ;;
+        --columbus)
+            columbus_path="$2"
+            shift 2
+            ;;
+        --mcscf-iter)
+            override_values[mcscf_iter]="$2"
+            shift 2
+            ;;
+        --mcscf-opt)
+            override_values[mcscf_opt_iter]="$2"
+            shift 2
+            ;;
+        --cisd-iter)
+            override_values[cisd_iter]="$2"
+            shift 2
+            ;;
+        --cisd-opt)
+            override_values[cisd_opt_iter]="$2"
+            shift 2
+            ;;
+        --aqcc-iter)
+            override_values[aqcc_iter]="$2"
+            shift 2
+            ;;
+        --aqcc-opt)
+            override_values[aqcc_opt_iter]="$2"
+            shift 2
+            ;;
+        --ncores)
+            override_values[ncores]="$2"
+            shift 2
+            ;;
+        --mem-per-core)
+            override_values[mem_per_core]="$2"
+            shift 2
+            ;;
+        --bandwidth)
+            override_values[bandwidth]="$2"
+            shift 2
+            ;;
+        --processor-per-node)
+            override_values[processor_per_node]="$2"
+            shift 2
+            ;;
+        --core-memory)
+            override_values[core_memory]="$2"
+            shift 2
+            ;;
+        --dry-run)
+            dry_run="yes"
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+stage="${stage:-$(find_stage_from_path)}"
+if [ -z "$stage" ]; then
+    echo "Error: Unable to detect stage from current path. Use --stage <MCSCF|CISD|AQCC>."
+    exit 1
+fi
+
+basis="${basis:-$(find_basis_from_path)}"
+if [ -z "$basis" ]; then
+    echo "Error: Unable to detect basis from current path. Use --basis <DZ|TZ>."
+    exit 1
+fi
+
+multiplicity="${multiplicity:-$(find_spin_from_path)}"
+if [ -z "$multiplicity" ]; then
+    echo "Error: Unable to detect multiplicity from current path. Use --multiplicity <Singlet|Triplet>."
+    exit 1
+fi
+
+if [[ "$stage" == "MCSCF" ]]; then
+    echo "Detected stage: MCSCF"
+elif [[ "$stage" == "CISD" ]]; then
+    echo "Detected stage: CISD"
+elif [[ "$stage" == "AQCC" ]]; then
+    echo "Detected stage: AQCC"
+fi
+
+echo "Detected basis: $basis"
+echo "Detected multiplicity: $multiplicity"
+echo "Run mode: $( [[ "$run_parallel" == "yes" ]] && echo "parallel" || echo "serial" )"
+
+if [ -n "$input_source" ] && [ ! -f "$input_source" ]; then
+    echo "Error: Input file '$input_source' not found."
+    exit 1
+fi
+
+if [ -n "$input_source" ]; then
+    if [ "$(readlink -f "$input_source")" = "$(readlink -f "$TARGET_INPUT")" ]; then
+        echo "Using existing input file at '$TARGET_INPUT'."
+    else
+        cp "$input_source" "$TARGET_INPUT"
+        echo "Copied existing input file to '$TARGET_INPUT'."
+    fi
+elif [ -f "$TARGET_INPUT" ]; then
+    echo "Using existing '$TARGET_INPUT'."
+else
+    if [ -f "$SCRIPTS_DIR/input_values.txt" ]; then
+        cp "$SCRIPTS_DIR/input_values.txt" "$TARGET_INPUT"
+        echo "Copied template input values from '$SCRIPTS_DIR/input_values.txt'."
+    else
+        echo "No existing input_values.txt found. Running the input generation helper in Scripts."
+        if [ ! -f "$SCRIPTS_DIR/input.sh" ]; then
+            echo "Error: Could not find '$SCRIPTS_DIR/input.sh' to generate input values."
+            exit 1
+        fi
+        bash "$SCRIPTS_DIR/input.sh"
+        if [ ! -f "$TARGET_INPUT" ]; then
+            echo "Error: input_values.txt was not created by Scripts/input.sh."
+            exit 1
+        fi
+    fi
+fi
+
+if [ -n "${override_values[calculation_set]:-}" ]; then
+    echo "Warning: calculation_set override is not supported; use --basis instead."
+fi
+
+set_or_append_setting calculation_set "$( [ "$basis" == "DZ" ] && echo 1 || echo 6 )"
+set_or_append_setting singlet_triplet_num "$( [ "$multiplicity" == "Singlet" ] && echo 1 || echo 3 )"
+set_or_append_setting high_spin "$( [ "$multiplicity" == "Triplet" ] && echo yes || echo no )"
+
+if [[ "$stage" == "MCSCF" ]]; then
+    mcscf_iter="${override_values[mcscf_iter]:--1}"
+    mcscf_opt_iter="${override_values[mcscf_opt_iter]:--1}"
+    set_or_append_setting mcscf_iter "$mcscf_iter"
+    set_or_append_setting mcscf_opt_iter "$mcscf_opt_iter"
+elif [[ "$stage" == "CISD" ]]; then
+    cisd_iter="${override_values[cisd_iter]:--1}"
+    cisd_opt_iter="${override_values[cisd_opt_iter]:--1}"
+    set_or_append_setting cisd_iter "$cisd_iter"
+    set_or_append_setting cisd_opt_iter "$cisd_opt_iter"
+elif [[ "$stage" == "AQCC" ]]; then
+    aqcc_iter="${override_values[aqcc_iter]:--1}"
+    aqcc_opt_iter="${override_values[aqcc_opt_iter]:--1}"
+    set_or_append_setting aqcc_iter "$aqcc_iter"
+    set_or_append_setting aqcc_opt_iter "$aqcc_opt_iter"
+fi
+
+if [[ "$run_parallel" == "yes" && ( "$stage" == "CISD" || "$stage" == "AQCC" ) ]]; then
+    set_or_append_setting ncores "${override_values[ncores]:-4}"
+    set_or_append_setting mem_per_core "${override_values[mem_per_core]:-750}"
+    set_or_append_setting bandwidth "${override_values[bandwidth]:-50}"
+    set_or_append_setting processor_per_node "${override_values[processor_per_node]:-4}"
+    set_or_append_setting core_memory "${override_values[core_memory]:-20000}"
+fi
+
+cat <<EOF >> "$TARGET_INPUT"
+
+#==============================
+# Generated by create_files
+# Stage: $stage
+# Basis: $basis
+# Multiplicity: $multiplicity
+# Run mode: $( [[ "$run_parallel" == "yes" ]] && echo "parallel" || echo "serial" )
+#==============================
+EOF
+
+echo "Created or updated $TARGET_INPUT."
+
+required_item="$(get_stage_requirements)"
+if [ -n "$required_item" ]; then
+    if [[ "$stage" == "MCSCF" && ! -f "$TARGET_DIR/geom" ]]; then
+        echo "Error: MCSCF preparation requires 'geom' in the current directory."
+        exit 1
+    fi
+    if [[ "$stage" == "CISD" && ! -d "$TARGET_DIR/MCSCF" && ! -f "$TARGET_DIR/mocoef" ]]; then
+        echo "Error: CISD preparation requires existing MCSCF outputs in './MCSCF/' or './mocoef'."
+        exit 1
+    fi
+    if [[ "$stage" == "AQCC" && ! -d "$TARGET_DIR/CI" ]]; then
+        echo "Error: AQCC preparation requires previous CISD outputs in './CI/'."
+        exit 1
+    fi
+fi
+
+if [[ "$dry_run" == "yes" ]]; then
+    echo "Dry-run mode enabled: skipping Columbus and expect validation."
+else
+    if [ -z "$columbus_path" ]; then
+        if [ -n "${COLUMBUS:-}" ]; then
+            columbus_path="$COLUMBUS"
+        fi
+    fi
+
+    if [ -z "$columbus_path" ]; then
+        if [ -t 0 ]; then
+            read -r -p "Enter Columbus directory (must contain colinp): " columbus_path
+        fi
+    fi
+
+    if [ -z "$columbus_path" ]; then
+        echo "Error: Columbus directory not provided. Set COLUMBUS or use --columbus."
+        exit 1
+    fi
+
+    if [ ! -x "$columbus_path/colinp" ]; then
+        echo "Error: '$columbus_path/colinp' not found or not executable."
+        exit 1
+    fi
+
+    export COLUMBUS="$columbus_path"
+
+    echo "Using COLUMBUS=$COLUMBUS"
+
+    if ! command -v expect >/dev/null 2>&1; then
+        echo "Error: expect is required but not installed or not in PATH."
+        exit 1
+    fi
+fi
+
+if [[ "$stage" == "CISD" || "$stage" == "AQCC" ]]; then
+    run_mode="$( [[ "$run_parallel" == "yes" ]] && echo "par" || echo "ser" )"
+else
+    run_mode="ser"
+fi
+
+expect_name=""
+case "$stage" in
+    MCSCF)
+        expect_name="mcscf.exp"
+        ;;
+    CISD)
+        expect_name="cisd-$run_mode.exp"
+        ;;
+    AQCC)
+        expect_name="aqcc-$run_mode.exp"
+        ;;
+esac
+
+if [ ! -f "$SCRIPTS_DIR/$expect_name" ]; then
+    echo "Error: Expected file '$SCRIPTS_DIR/$expect_name' not found."
+    exit 1
+fi
+
+if [ -f "$TARGET_DIR/$expect_name" ]; then
+    if ! cmp -s "$SCRIPTS_DIR/$expect_name" "$TARGET_DIR/$expect_name"; then
+        echo "Existing '$expect_name' found in current folder; preserving it."
+    fi
+else
+    cp "$SCRIPTS_DIR/$expect_name" "$TARGET_DIR/$expect_name"
+    chmod +x "$TARGET_DIR/$expect_name"
+    echo "Copied '$expect_name' into current directory."
+fi
+
+if [[ "$dry_run" == "yes" ]]; then
+    echo "Dry-run mode enabled: prepared files and copied '$expect_name' but did not execute expect."
+    echo "✅ Input preparation is complete for stage $stage."
+    exit 0
+fi
+
+if [ -f "$TARGET_DIR/$expect_name" ]; then
+    echo "Running expect script '$expect_name' to create input files..."
+    expect "$TARGET_DIR/$expect_name"
+    echo "Expect script finished."
+else
+    echo "Error: Could not find expect script '$expect_name' in current directory."
+    exit 1
+fi
+
+echo "✅ Input file generation complete for stage $stage."
