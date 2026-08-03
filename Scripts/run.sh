@@ -113,10 +113,18 @@ cp "$base_input" "$prep_dir/input_values.base.txt"
 if [ "$spin_name" = "Singlet" ]; then
     singlet_triplet_num=1
     high_spin=no
+    spatial_symmetry=$(
+        awk '$2=="singlet_spatial_symmetry" {print $3; exit}' "$base_input"
+    )
 else
     singlet_triplet_num=3
     high_spin=yes
+    spatial_symmetry=$(
+        awk '$2=="triplet_spatial_symmetry" {print $3; exit}' "$base_input"
+    )
 fi
+
+[ -n "$spatial_symmetry" ] || fail "Could not determine spatial symmetry from $base_input."
 
 input_file="$prep_dir/input_values.txt"
 {
@@ -126,6 +134,7 @@ input_file="$prep_dir/input_values.txt"
     echo "set COLUMBUS \"$COLUMBUS\""
     echo "set calculation_set $calculation_set"
     echo "set singlet_triplet_num $singlet_triplet_num"
+    echo "set spatial_symmetry $spatial_symmetry"
     echo "set high_spin $high_spin"
     echo "set mcscf_iter $mcscf_iter"
     echo "set mcscf_opt_iter $mcscf_opt_iter"
@@ -165,4 +174,4 @@ case "$stage" in
 esac
 
 echo "Input files prepared in $prep_dir"
-echo "No Columbus calculation was started."
+# echo "No Columbus calculation was started."
