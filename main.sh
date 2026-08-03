@@ -82,12 +82,30 @@ initialize() {
         echo "set COLUMBUS \"$columbus\""
     } >> "$SCRIPTS_DIR/input_values.txt"
 
+    printf "\n"
+    read -r -p "Enter the diradicals to prepare (space separated, e.g. thiazole_24 thiazole_25 thiazole_45): " -a diradicals
+
+    # Check that at least one diradical was provided
+    [ "${#diradicals[@]}" -gt 0 ] || die "At least one diradical must be provided."
+
+    # Validate format
+    for diradical in "${diradicals[@]}"; do
+        [[ "$diradical" =~ ^[a-zA-Z0-9]+_[0-9]+$ ]] || \
+            die "Invalid diradical format: $diradical (expected format: molecule_number, e.g. thiazole_24)"
+    done
+
     for basis in DZ TZ; do
-        for spin in Singlet Triplet; do
-            branch="$ROOT_DIR/Columbus/$basis/$spin"
-            mkdir -p "$branch/MCSCF-prep" "$branch/MCSCF" \
-                "$branch/CISD-prep" "$branch/CISD" \
-                "$branch/AQCC-prep" "$branch/AQCC"
+        for diradical in "${diradicals[@]}"; do
+            for spin in Singlet Triplet; do
+                branch="$ROOT_DIR/Columbus/$basis/$diradical/$spin"
+
+                mkdir -p "$branch/MCSCF" \
+                        "$branch/CISD" \
+                        "$branch/AQCC" \
+                        "$branch/MCSCF-prep" \
+                        "$branch/CISD-prep" \
+                        "$branch/AQCC-prep"
+            done
         done
     done
 

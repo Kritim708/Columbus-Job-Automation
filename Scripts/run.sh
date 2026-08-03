@@ -158,15 +158,15 @@ case "$stage" in
         (cd "$prep_dir" && expect ./mcscf.exp)
         ;;
     CISD)
-        [ -d "$ROOT_DIR/Columbus/$basis/$spin_name/MCSCF-prep" ] || fail "MCSCF-prep directory is missing."
-        cp -a "$ROOT_DIR/Columbus/$basis/$spin_name/MCSCF-prep/." "$prep_dir/"
+        [ -d "$ROOT_DIR/Columbus/$basis/$spin_name/MCSCF" ] || fail "MCSCF directory is missing."
+        cp "$ROOT_DIR/Columbus/$basis/$spin_name/MCSCF/*" "$prep_dir/."
         cp "$input_file" "$prep_dir/input_values.txt"
         cp "$SCRIPT_DIR/cisd-$run_mode.exp" "$prep_dir/"
         (cd "$prep_dir" && expect "./cisd-$run_mode.exp")
         ;;
     AQCC)
-        [ -d "$ROOT_DIR/Columbus/$basis/$spin_name/CISD-prep" ] || fail "CISD-prep directory is missing."
-        cp -a "$ROOT_DIR/Columbus/$basis/$spin_name/CISD-prep/." "$prep_dir/"
+        [ -d "$ROOT_DIR/Columbus/$basis/$spin_name/CISD" ] || fail "CISD directory is missing."
+        cp  "$ROOT_DIR/Columbus/$basis/$spin_name/CISD/*" "$prep_dir/."
         cp "$input_file" "$prep_dir/input_values.txt"
         cp "$SCRIPT_DIR/aqcc-$run_mode.exp" "$prep_dir/"
         (cd "$prep_dir" && expect "./aqcc-$run_mode.exp")
