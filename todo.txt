@@ -1,0 +1,5 @@
+1) Ensure that all variables including high_spin, singlet_triplet_num, mcscf_iter, mcscf_opt_iter and calculation_set is available in input_values.txt.
+2) Change the COLUMBUS path in input_values.txt to match the one in config.txt.
+3) Make it usable for multiple diradicals and then create the mcscf file in the mcscf prep and cisd prep in cisd-prep direcotry and on so that they don't have to come all the way back to give out all the values. 
+4) Options are to give a xyz file, a log file or the geom file itself. 
+5) For mcscf.sh, cisd.sh and aqcc.sh, the opportunity to redefine the input_values.txt. 

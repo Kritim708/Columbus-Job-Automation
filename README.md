@@ -12,13 +12,10 @@ This project automates the setup and execution of Columbus quantum chemistry cal
   - `run.sh`: Drives the workflow, determines calculation settings (Singlet/Triplet and DZ/TZ), and conditionally launches MCSCF, CISD, and AQCC stages.
   - `make_geom.sh`: Converts your XYZ geometry file to the Columbus input format.
   - `mcscf.exp`, `cisd-ser.exp`, `cisd-par.exp`, `aqcc-ser.exp`, `aqcc-par.exp`: Expect scripts for automating each calculation stage, with “ser” for serial and “par” for parallel execution. *Parallel mode is under development.*
-  - Other supplementary files: config.txt, input_values.txt etc.
 
 **Note:** The parallel execution scripts (`*par.exp`) are under development and may not be fully functional.
 
----
 
-## Prerequisites
 
 - Columbus 7.0 or higher installed
 - Linux/Unix environment (bash shell)
@@ -26,13 +23,8 @@ This project automates the setup and execution of Columbus quantum chemistry cal
 - Python 3 (for DRT.xlsx parsing via `parse_drt.py`)
 - Python packages:
   - `pandas` – for reading and parsing Excel files
-  - `openpyxl` – backend for reading .xlsx files (installed with pandas)
 
 ---
-
-## Workflow (what you actually do)
-
-Short answer: run main.sh and follow the prompts. main.sh calls Scripts/input.sh and then hands off to Scripts/run.sh, which performs all remaining steps (geometry conversion, creating output folders, running expect scripts and Columbus runc, and logging).
 
 Below is exactly what main.sh asks for (in order) and how to respond or use the options it provides.
 
@@ -72,11 +64,6 @@ Below is exactly what main.sh asks for (in order) and how to respond or use the 
       - SCF doubly occupied orbitals (scf_docc)
       - SCF open-shell orbitals (scf_opsh)
       - MCSCF doubly occupied orbitals (mcscf_docc)
-      - MCSCF active space (mcscf_cas)
-      - MRCI frozen core (mrci_fc)
-      - MRCI frozen virtual (mrci_fv)
-      - MRCI doubly occupied orbitals (mrci_docc)
-      - MRCI auxiliary orbitals (mrci_aux)
       - MRCI internal orbitals (mrci_int)
 - At the end input_values.txt is written into Scripts and later copied into each run's output directory.
 
@@ -85,18 +72,6 @@ Below is exactly what main.sh asks for (in order) and how to respond or use the 
   - 1 → cc-pvdz (labelled DZ)
   - 6 → cc-pvtz (labelled TZ)
 - Prompt: Select multiplicity:
-  - 1 → Singlet
-  - 3 → Triplet
-  - (You may select only one option in the default flow; configuration allows preparing for one or both multiplicities)
-
-6) Run mode (serial vs parallel)
-- Prompt: Do you want to run in parallel mode? (y/n)
-  - If yes, you will be prompted for parallel configuration values which are appended to `input_values.txt`:
-    - Number of cores (`ncores`, default 4)
-    - Memory per core in MB (`mem_per_core`, default 750)
-    - Effective bandwidth (`bandwidth`, default 50)
-    - Processors per node (`processor_per_node`, default 4)
-    - Core memory in MB (`core_memory`, default 20000)
   - If no, the script defaults to serial mode execution.
 - Note: Parallel mode uses the `*-par.exp` expect scripts; these are marked experimental — if you do not need parallel execution, prefer serial mode.
 

@@ -292,7 +292,7 @@ if { $mcscf_iter == 100 || $mcscf_iter == -1 } {
 send "\u001b\[A"     ;# Press Up Arrow
 send "Y\r"           ;# Finished
 
-interact
+#interact
 # Step 30: Set up job control
 expect {
     "main menu options" {

@@ -21,4 +21,4 @@ mcscf_mem_triplet=4000
 cisd_mem_triplet=4000
 aqcc_mem_triplet=4000
 
-COLUMBUS=/usr/local/sw/Columbus/columbus-v7.2.2/Columbus
+COLUMBUS=/usr/local/chem.sw/Columbus

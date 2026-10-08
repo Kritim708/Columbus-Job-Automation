@@ -8,6 +8,6 @@ Scripts/*.xyz
 Scripts/*.log
 !Scripts/input_values.txt
 
-# Track log.out in the current directory
+# Untrack log.out in the current directory
 log.out
 
