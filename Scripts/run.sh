@@ -42,19 +42,21 @@ Optional global values (applied to every generated input_values.txt):
   -ppn N             (default 4)
   -core-memory N     (default 20000)
 
-Per-diradical/basis/spin overrides:
+Per-diradical inputs:
+    Scripts/diradicals/<NAME>/input_values.txt and geom are used when present.
+    Legacy shared Scripts/input_values.txt and Scripts/geom remain fallbacks.
+
+Per-basis/spin overrides:
   Place a file at Columbus/<basis>/<diradical>/<spin>/input_values.txt
   (e.g. with a different singlet_spatial_symmetry) and it will be used
-  as the base instead of Scripts/input_values.txt for that combination.
+    ahead of the diradical-level input for that combination.
 EOF
 }
 
 fail() { echo "Error: $*" >&2; exit 2; }
 require_value() { [ "$#" -ge 2 ] || fail "$1 requires a value."; }
 
-[ -f "$BASE_INPUT" ] || fail "Run '../main.sh initialize' first; Scripts/input_values.txt is missing."
 [ -d "$COLUMBUS_ROOT" ] || fail "Columbus directory not found; run '../main.sh initialize' first."
-[ -f "$SCRIPT_DIR/geom" ] || fail "Scripts/geom is missing; run '../main.sh initialize' first."
 
 filter_basis=""
 filter_diradical=""
@@ -114,18 +116,18 @@ if [ -f "$CONFIG_FILE" ]; then
 fi
 [ -n "${COLUMBUS:-}" ] || fail "COLUMBUS is not configured; run '../main.sh initialize'."
 
-for tmpl in mcscf.sh cisd.sh aqcc.sh mcscf.exp cisd-ser.exp cisd-par.exp aqcc-ser.exp aqcc-par.exp; do
+for tmpl in MCSCF/mcscf.sh MCSCF/mcscf.exp CISD/cisd.sh CISD/cisd-ser.exp CISD/cisd-par.exp AQCC/aqcc.sh AQCC/aqcc-ser.exp AQCC/aqcc-par.exp; do
     [ -f "$SCRIPT_DIR/$tmpl" ] || fail "Missing template file Scripts/$tmpl."
 done
 
 prepared_count=0
 
 # Stages one *-prep directory: writes input_values.txt and copies the
-# stage script + .exp file(s) + geom into it. Returns 1 (without failing
+# stage script + .exp file(s) + geometry into it. Returns 1 (without failing
 # the whole run) if spatial symmetry can't be determined for this combo.
 stage_prep_dir() {
     local prep_dir="$1" stage="$2"
-    local basis="$3" diradical="$4" spin_name="$5" base_input="$6"
+    local basis="$3" diradical="$4" spin_name="$5" base_input="$6" geometry_input="$7"
 
     local calculation_set singlet_triplet_num high_spin spatial_symmetry
     [ "$basis" = "DZ" ] && calculation_set=1 || calculation_set=6
@@ -146,7 +148,7 @@ stage_prep_dir() {
 
     mkdir -p "$prep_dir"
     rm -f "$prep_dir"/*
-    cp "$SCRIPT_DIR/geom" "$prep_dir/"
+    cp "$geometry_input" "$prep_dir/geom"
 
     {
         cat "$base_input"
@@ -175,15 +177,15 @@ stage_prep_dir() {
 
     case "$stage" in
         MCSCF)
-            cp "$SCRIPT_DIR/mcscf.sh" "$SCRIPT_DIR/mcscf.exp" "$prep_dir/"
+            cp "$SCRIPT_DIR/MCSCF/mcscf.sh" "$SCRIPT_DIR/MCSCF/mcscf.exp" "$prep_dir/"
             chmod +x "$prep_dir/mcscf.sh"
             ;;
         CISD)
-            cp "$SCRIPT_DIR/cisd.sh" "$SCRIPT_DIR/cisd-ser.exp" "$SCRIPT_DIR/cisd-par.exp" "$prep_dir/"
+            cp "$SCRIPT_DIR/CISD/cisd.sh" "$SCRIPT_DIR/CISD/cisd-ser.exp" "$SCRIPT_DIR/CISD/cisd-par.exp" "$prep_dir/"
             chmod +x "$prep_dir/cisd.sh"
             ;;
         AQCC)
-            cp "$SCRIPT_DIR/aqcc.sh" "$SCRIPT_DIR/aqcc-ser.exp" "$SCRIPT_DIR/aqcc-par.exp" "$prep_dir/"
+            cp "$SCRIPT_DIR/AQCC/aqcc.sh" "$SCRIPT_DIR/AQCC/aqcc-ser.exp" "$SCRIPT_DIR/AQCC/aqcc-par.exp" "$prep_dir/"
             chmod +x "$prep_dir/aqcc.sh"
             ;;
     esac
@@ -208,10 +210,26 @@ for basis_dir in "$COLUMBUS_ROOT"/*/; do
             [ -d "$spin_dir" ] || continue
 
             override_input="$spin_dir/input_values.txt"
+            diradical_input="$SCRIPT_DIR/diradicals/$diradical/input_values.txt"
             if [ -f "$override_input" ]; then
                 base_input="$override_input"
-            else
+            elif [ -f "$diradical_input" ]; then
+                base_input="$diradical_input"
+            elif [ -f "$BASE_INPUT" ]; then
                 base_input="$BASE_INPUT"
+            else
+                echo "Warning: no input_values.txt found for $diradical/$spin_name; skipping." >&2
+                continue
+            fi
+
+            diradical_geom="$SCRIPT_DIR/diradicals/$diradical/geom"
+            if [ -f "$diradical_geom" ]; then
+                geometry_input="$diradical_geom"
+            elif [ -f "$SCRIPT_DIR/geom" ]; then
+                geometry_input="$SCRIPT_DIR/geom"
+            else
+                echo "Warning: no geom found for $diradical; skipping." >&2
+                continue
             fi
 
             for stage in MCSCF CISD AQCC; do
@@ -220,7 +238,7 @@ for basis_dir in "$COLUMBUS_ROOT"/*/; do
                     echo "Warning: $prep_dir missing; skipping (was Columbus initialized?)." >&2
                     continue
                 fi
-                if stage_prep_dir "$prep_dir" "$stage" "$basis" "$diradical" "$spin_name" "$base_input"; then
+                if stage_prep_dir "$prep_dir" "$stage" "$basis" "$diradical" "$spin_name" "$base_input" "$geometry_input"; then
                     prepared_count=$((prepared_count + 1))
                 fi
             done
