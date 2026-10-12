@@ -10,9 +10,12 @@ usage() {
     cat <<EOF
 Usage:
   $(basename "$0") initialize
+  $(basename "$0") add_diradical [NAME]
+    $(basename "$0") remove_diradical [NAME]
+    $(basename "$0") -columbus_path PATH
 
-Initialize creates the Columbus directory tree, imports a DRT table and XYZ
-geometry, and prepares Scripts/input_values.txt and Scripts/geom.
+Initialize sets up one or more diradicals. Each diradical's geometry and
+DRT-derived input_values.txt are stored under Scripts/diradicals/<NAME>/.
 EOF
 }
 
@@ -21,105 +24,218 @@ die() {
     exit 1
 }
 
-copy_file() {
-    local prompt="$1"
-    local destination="$2"
-    local source_path
+read_columbus_path() {
+    if [ -f "$SCRIPTS_DIR/config.txt" ]; then
+        awk 'index($0, "COLUMBUS=") == 1 { sub(/\r$/, ""); print substr($0, 10); exit }' \
+            "$SCRIPTS_DIR/config.txt"
+    fi
+}
+
+validate_columbus_path() {
+    local path="$1" file
+    for file in runc colinp xyz2col.x; do
+        [ -f "$path/$file" ] || die "Could not find '$path/$file'."
+    done
+}
+
+set_columbus_path() {
+    local path="$1" config_file="$SCRIPTS_DIR/config.txt" temp_file
+    validate_columbus_path "$path"
+    mkdir -p "$SCRIPTS_DIR" || die "Could not create Scripts directory."
+    temp_file="$(mktemp "$SCRIPTS_DIR/.config.txt.XXXXXX")" || die "Could not create temporary config file."
+    if [ -f "$config_file" ]; then
+        awk -v value="$path" '
+            index($0, "COLUMBUS=") == 1 {
+                if (!written++) print "COLUMBUS=" value
+                next
+            }
+            { print }
+            END { if (!written) print "COLUMBUS=" value }
+        ' "$config_file" > "$temp_file" || {
+            rm -f -- "$temp_file"
+            die "Could not update '$config_file'."
+        }
+    else
+        printf 'COLUMBUS=%s\n' "$path" > "$temp_file"
+    fi
+    mv -- "$temp_file" "$config_file" || die "Could not update '$config_file'."
+    echo "Saved Columbus path in $config_file."
+}
+
+ensure_columbus_path() {
+    local path
+    path="$(read_columbus_path)"
+    if [ -z "$path" ]; then
+        read -r -p "Enter Columbus directory [$DEFAULT_COLUMBUS]: " path
+        path=${path:-$DEFAULT_COLUMBUS}
+        set_columbus_path "$path"
+    fi
+    validate_columbus_path "$path"
+    COLUMBUS_PATH="$path"
+}
+
+validate_diradical() {
+    [[ "$1" =~ ^[a-zA-Z0-9]+_[0-9]+$ ]] || \
+        die "Invalid diradical format: $1 (expected molecule_number, e.g. thiazole_24)."
+}
+
+# Returns 0 if valid; otherwise prints the reason to stderr and returns 1
+check_diradical() {
+    local d="$1"
+    if [[ ! "$d" =~ ^[a-zA-Z0-9]+_[0-9]+$ ]]; then
+        echo "  Invalid format: '$d' (expected molecule_number, e.g. thiazole_24)." >&2
+        return 1
+    fi
+    if [ -e "$SCRIPTS_DIR/diradicals/$d" ]; then
+        echo "  '$d' is already initialized." >&2
+        return 1
+    fi
+    return 0
+}
+
+prompt_diradicals() {
+    local -a entered=()
+    local -A seen=()
+    local d ok
 
     while true; do
-        read -r -p "$prompt: " source_path
-        if [ -f "$source_path" ]; then
-            cp "$source_path" "$destination" || die "Could not copy '$source_path'."
-            printf '%s\n' "Copied $(basename "$source_path") to $(dirname "$destination")."
-            return
+        read -r -p "Enter the diradicals to prepare (space separated, e.g. thiazole_24 thiazole_25, or q to quit): " -a entered
+
+        ok=1
+        seen=()
+
+        if [ "${#entered[@]}" -eq 0 ]; then
+            echo "  No diradicals entered. At least one is required." >&2
+            ok=0
+        else
+            for d in "${entered[@]}"; do
+                if [ -n "${seen[$d]:-}" ]; then
+                    echo "  '$d' was entered more than once." >&2
+                    ok=0
+                    continue
+                fi
+                seen[$d]=1
+                check_diradical "$d" || ok=0
+            done
         fi
-        echo "File not found: $source_path"
+
+        if [ "$ok" -eq 1 ]; then
+            diradicals=("${entered[@]}")
+            return 0
+        fi
+
     done
 }
 
 initialize() {
-    local columbus
-    local xyz_name
-    local xyz_path
+    local shared_drt="" use_shared_drt answer diradical
+    local -a diradicals=()
+    local -A seen_diradicals=()
 
     mkdir -p "$SCRIPTS_DIR" || die "Could not create Scripts directory."
-
     echo "Columbus input-file setup"
     echo "========================="
+    ensure_columbus_path
 
-    copy_file "Enter the full path to the DRT table (.xlsx)" "$SCRIPTS_DIR/DRT.xlsx"
-    python3 "$SCRIPTS_DIR/parse_drt.py" "$SCRIPTS_DIR/DRT.xlsx" || die "DRT parsing failed."
-
+    prompt_diradicals
     while true; do
-        read -r -p "Enter the full path to the XYZ geometry file: " xyz_path
-        if [ -f "$xyz_path" ]; then
-            xyz_name="$(basename "$xyz_path")"
-            [[ "$xyz_name" == *.xyz ]] || die "The geometry file must have a .xyz extension."
-            cp "$xyz_path" "$SCRIPTS_DIR/$xyz_name" || die "Could not copy '$xyz_path'."
-            echo "Copied $xyz_name to Scripts."
-            break
-        fi
-        echo "File not found: $xyz_path"
+        read -r -p "Use the same DRT file for all diradicals? [Y/n]: " answer
+        case "${answer,,}" in
+            ""|y|yes) use_shared_drt=yes; break ;;
+            n|no) use_shared_drt=no; break ;;
+            *) echo "Please answer yes or no." ;;
+        esac
     done
-
-    printf "\n"
-    read -r -p "Enter the number of unique atoms in the molecule: " num_unique_atoms
-    [[ "$num_unique_atoms" =~ ^[1-9][0-9]*$ ]] || die "Number of unique atoms must be a positive integer."
-
-    printf "\nset num_unique_atoms %s\n" "$num_unique_atoms" >> "$SCRIPTS_DIR/input_values.txt"
-
-    printf "\n"
-    read -r -p "Enter Columbus directory [$DEFAULT_COLUMBUS]: " columbus
-    columbus=${columbus:-$DEFAULT_COLUMBUS}
-    [ -f "$columbus/runc" ] || die "Could not find '$columbus/runc'."
-    [ -f "$columbus/colinp" ] || die "Could not find '$columbus/colinp'."
-    [ -f "$columbus/xyz2col.x" ] || die "Could not find '$columbus/xyz2col.x'."
-
-    (cd "$SCRIPTS_DIR" && ./make_geom.sh "$xyz_name" "$columbus") || die "Geometry conversion failed."
-    
-    {
-        echo "# Generated by main.sh initialize"
-        echo "set COLUMBUS \"$columbus\""
-    } >> "$SCRIPTS_DIR/input_values.txt"
-
-    printf "\n"
-    read -r -p "Enter the diradicals to prepare (space separated, e.g. thiazole_24 thiazole_25 thiazole_45): " -a diradicals
-
-    # Check that at least one diradical was provided
-    [ "${#diradicals[@]}" -gt 0 ] || die "At least one diradical must be provided."
-
-    # Validate format
-    for diradical in "${diradicals[@]}"; do
-        [[ "$diradical" =~ ^[a-zA-Z0-9]+_[0-9]+$ ]] || \
-            die "Invalid diradical format: $diradical (expected format: molecule_number, e.g. thiazole_24)"
-    done
-
-    for basis in DZ TZ; do
-        for diradical in "${diradicals[@]}"; do
-            for spin in Singlet Triplet; do
-                branch="$ROOT_DIR/Columbus/$basis/$diradical/$spin"
-
-                mkdir -p "$branch/MCSCF" \
-                        "$branch/CISD" \
-                        "$branch/AQCC" \
-                        "$branch/MCSCF-prep" \
-                        "$branch/CISD-prep" \
-                        "$branch/AQCC-prep"
-            done
+    if [ "$use_shared_drt" = yes ]; then
+        while true; do
+            read -r -p "Enter the full path to the shared DRT table (.xlsx): " shared_drt
+            [ -f "$shared_drt" ] && break
+            echo "File not found: $shared_drt"
         done
-    done
+    fi
 
-    cat > "$SCRIPTS_DIR/config.txt" <<EOF
-COLUMBUS=$columbus
-EOF
+
+    for diradical in "${diradicals[@]}"; do
+        bash "$SCRIPTS_DIR/Utilities/setup_diradical.sh" "$diradical" "$shared_drt" \
+            || die "Setup failed for '$diradical'."
+    done
 
     echo "Initialization complete."
-    echo "Use Scripts/run.sh with -mcscf, -cisd-ser, -cisd-par, -aqcc-ser, or -aqcc-par."
+    echo "Next run Scripts/run.sh."
+}
+
+add_diradical() {
+    local diradical="${1:-}"
+
+    if [ -z "$diradical" ]; then
+        read -r -p "Enter diradical name (e.g. thiazole_24): " diradical
+    fi
+    validate_diradical "$diradical"
+
+    ensure_columbus_path
+    bash "$SCRIPTS_DIR/Utilities/setup_diradical.sh" "$diradical" \
+        || die "Setup failed for '$diradical'."
+    echo "Added $diradical. Next run Scripts/run.sh."
+}
+
+remove_diradical() {
+    local diradical="${1:-}" path confirm
+    local -a paths=() found=()
+
+    if [ -z "$diradical" ]; then
+        read -r -p "Enter diradical name to remove (or q to cancel): " diradical
+        case "${diradical,,}" in
+            q|quit) echo "Removal cancelled."; return 0 ;;
+        esac
+    fi
+    validate_diradical "$diradical"
+
+    paths=(
+        "$SCRIPTS_DIR/diradicals/$diradical"
+        "$ROOT_DIR/Columbus/DZ/$diradical"
+        "$ROOT_DIR/Columbus/TZ/$diradical"
+    )
+    for path in "${paths[@]}"; do
+        if [ -e "$path" ] || [ -L "$path" ]; then
+            found+=("$path")
+        fi
+    done
+
+    if [ "${#found[@]}" -eq 0 ]; then
+        echo "No files or directories found for '$diradical'; nothing removed."
+        return 0
+    fi
+
+    echo "WARNING: this permanently removes all contents at these paths for '$diradical':"
+    printf '  %s\n' "${found[@]}"
+    read -r -p "Continue? [y/N] " confirm
+    case "${confirm,,}" in
+        y|yes) ;;
+        *) echo "Removal cancelled; no files were removed."; return 0 ;;
+    esac
+
+    for path in "${found[@]}"; do
+        rm -rf -- "$path"
+    done
+    echo "Removed diradical '$diradical'."
 }
 
 case "${1:-}" in
     initialize)
+        [ "$#" -eq 1 ] || die "initialize does not accept arguments."
         initialize
+        ;;
+    add_diradical)
+        [ "$#" -le 2 ] || die "add_diradical accepts at most one name."
+        add_diradical "${2:-}"
+        ;;
+    remove_diradical)
+        [ "$#" -le 2 ] || die "remove_diradical accepts at most one name."
+        remove_diradical "${2:-}"
+        ;;
+    -columbus_path)
+        [ "$#" -eq 2 ] || die "Usage: $(basename "$0") -columbus_path PATH"
+        set_columbus_path "$2"
         ;;
     -h|--help)
         usage

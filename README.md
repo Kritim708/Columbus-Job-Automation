@@ -7,11 +7,13 @@ This project automates the setup and execution of Columbus quantum chemistry cal
 ## Project Structure
 
 - `main.sh`
-  - Entry point: collects high-level information from the user (e.g., calculation set and multiplicity).
+  - Entry point for initializing and adding diradicals.
 - `Scripts/`
-  - `run.sh`: Drives the workflow, determines calculation settings (Singlet/Triplet and DZ/TZ), and conditionally launches MCSCF, CISD, and AQCC stages.
-  - `make_geom.sh`: Converts your XYZ geometry file to the Columbus input format.
-  - `mcscf.exp`, `cisd-ser.exp`, `cisd-par.exp`, `aqcc-ser.exp`, `aqcc-par.exp`: Expect scripts for automating each calculation stage, with “ser” for serial and “par” for parallel execution. *Parallel mode is under development.*
+  - `run.sh`: Stages method scripts into the calculation prep directories.
+  - `AQCC/`, `CISD/`, `MCSCF/`: Each contains its method launcher and corresponding Expect scripts.
+  - `Utilities/`: Geometry conversion, DRT parsing, log conversion, and manual input helpers.
+  - `diradicals/<NAME>/`: Source DRT/geometry plus that diradical's `input_values.txt` and Columbus `geom`.
+  - `config.txt` and shared templates remain at the `Scripts/` root.
 
 **Note:** The parallel execution scripts (`*par.exp`) are under development and may not be fully functional.
 
@@ -32,79 +34,23 @@ Below is exactly what main.sh asks for (in order) and how to respond or use the 
 - Make sure scripts are executable:
   ```bash
   chmod +x main.sh
-  chmod +x Scripts/*.sh
-  chmod +x Scripts/*.exp
+  chmod +x Scripts/*.sh Scripts/AQCC/*.sh Scripts/CISD/*.sh Scripts/MCSCF/*.sh Scripts/Utilities/*.sh
+  chmod +x Scripts/AQCC/*.exp Scripts/CISD/*.exp Scripts/MCSCF/*.exp
   ```
 - Run:
   ```bash
-  bash main.sh
+  bash main.sh initialize
   ```
 
-2) Columbus installation directory
-- Prompt: Enter Columbus directory (default is /usr/local/chem.sw/Columbus).
-- main.sh verifies that the provided directory contains both `runc` and `colinp`. Exported to the run environment as COLUMBUS.
-- Tip: If verification fails, check the path and try again.
+You can add another diradical later with `bash main.sh add_diradical thiazole_45` (omit the name to be prompted for it).
+Remove one with `bash main.sh remove_diradical thiazole_45`. The command lists existing per-diradical paths and asks for confirmation before deleting them; missing paths are skipped.
+Set or change the Columbus installation with `bash main.sh -columbus_path "/path/to/Columbus"`. Initialization reuses the configured path and prompts only when `Scripts/config.txt` has no `COLUMBUS=` value.
 
-3) Geometry (.xyz) file
-- main.sh switches into the Scripts directory and looks for .xyz files there.
-- If .xyz files are present you can select one or choose "Import a new .xyz file".
-- If none are present you will be asked for the full path to your .xyz file; it will be copied into Scripts.
-- After selection, the script runs `Scripts/make_geom.sh <selected_xyz> <COLUMBUS>` which calls Columbus's xyz2col.x to create the geometry file used by Columbus.
+2) Diradical inputs
+- Enter all diradical names, then provide a geometry file for each one (`.xyz`, `.log`, or Columbus `geom`).
+- Choose whether to use one DRT table for all diradicals or provide a separate `.xlsx` for each.
+- Inputs and generated files are stored under `Scripts/diradicals/<NAME>/`; `Scripts/run.sh` stages the matching `geom` and values into each prep directory.
 
-4) Input values configuration
-- main.sh presents a menu with three options for configuring input values:
-  - **Use existing input_values.txt** (if available) — skip re-entering basic parameters.
-  - **Import DRT.xlsx** — runs `Scripts/parse_drt.py` to parse DRT (Doubly-Rooted Ternary) values from an Excel file. You can specify a custom directory or use the default (Scripts/DRT.xlsx).
-  - **Manually enter input values (input.sh)** — runs `Scripts/input.sh` and prompts for the following fields:
-    - Number of unique atoms (num_unique_atoms)
-    - Group symmetry (e.g., cs, c2v)
-    - Spatial symmetry
-    - DRT-table related values:
-      - Number of electrons (num_electrons)
-      - SCF doubly occupied orbitals (scf_docc)
-      - SCF open-shell orbitals (scf_opsh)
-      - MCSCF doubly occupied orbitals (mcscf_docc)
-      - MRCI internal orbitals (mrci_int)
-- At the end input_values.txt is written into Scripts and later copied into each run's output directory.
-
-5) Calculation set and multiplicity (high-level choices)
-- Prompt: Select calculation set:
-  - 1 → cc-pvdz (labelled DZ)
-  - 6 → cc-pvtz (labelled TZ)
-- Prompt: Select multiplicity:
-  - If no, the script defaults to serial mode execution.
-- Note: Parallel mode uses the `*-par.exp` expect scripts; these are marked experimental — if you do not need parallel execution, prefer serial mode.
-
-7) Slurm submission choice
-- Prompt: Do you want to submit jobs via Slurm? (y/n)
-  - If yes, the script displays important validation reminders:
-    - Verify the Slurm file is on the cluster/workstation you're using.
-    - Check that your email address is correct.
-    - Ensure core and memory requests are appropriate.
-    - Verify other Slurm parameters (timing, account, etc.) are set correctly.
-  - You must then provide the full path to your Slurm submission file; it will be copied into the Scripts directory as `columbus.slurm`.
-  - The script will use `sbatch` to submit jobs when Slurm is selected.
-  - If no, the script invokes `$COLUMBUS/runc` locally.
-
-8) Per-multiplicity job options (for each selected multiplicity)
-- For each multiplicity (Singlet and/or Triplet) you will be asked:
-  - Do you want to run MCSCF? (y/n)
-    - If yes, you will be prompted for:
-      - MCSCF iterations (mcscf_iter) (default -1 = automatic)
-      - MCSCF optimization cycles (mcscf_opt_iter) (default -1)
-      - Memory for MCSCF (mcscf_mem) in MB (default 4000)
-  - Do you want to run CISD? (y/n)
-    - If yes, you will be prompted for:
-      - CISD iterations (cisd_iter) (default -1)
-      - CISD optimization cycles (cisd_opt_iter) (default -1)
-      - Memory for CISD (cisd_mem) in MB (default 4000)
-  - Do you want to run AQCC? (y/n)
-    - If yes, you will be prompted for:
-      - AQCC iterations (aqcc_iter) (default -1)
-      - AQCC optimization cycles (aqcc_opt_iter) (default -1)
-      - Memory for AQCC (aqcc_mem) in MB (default 4000)
-- The script bundles these into a per-multiplicity `input_values.txt` under:
-  - `Columbus/<DZ|TZ>/<Singlet|Triplet>/input_values.txt`
 
 9) What main.sh does next
 - main.sh writes a `config.txt` that contains:
@@ -142,7 +88,7 @@ Below is exactly what main.sh asks for (in order) and how to respond or use the 
   - Per-run log: `Columbus/<DZ|TZ>/<Singlet|Triplet>/log.out`
   - Per-stage runc errors may be in `runc.error` inside the stage directory.
 - Reuse inputs:
-  - If `Scripts/input_values.txt` already exists you can choose to reuse it and avoid retyping the DRT-table values.
+  - Each initialized diradical keeps its DRT-derived values under `Scripts/diradicals/<NAME>/input_values.txt` for later staging.
 - Parallel mode:
   - Experimental — verify resource availability and test on small systems before large production runs.
 - Slurm:
