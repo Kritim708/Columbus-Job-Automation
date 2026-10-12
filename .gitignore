@@ -6,7 +6,7 @@ Columbus/*
 Scripts/*.txt
 Scripts/*.xyz
 Scripts/*.log
-!Scripts/input_values.txt
+Scripts/diradicals/*
 
 # Untrack log.out in the current directory
 log.out
