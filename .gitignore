@@ -11,3 +11,6 @@ Scripts/*.log
 # Untrack log.out in the current directory
 log.out
 
+# Python bytecode
+__pycache__/
+*.pyc

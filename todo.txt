@@ -1,5 +1,15 @@
-1) Ensure that all variables including high_spin, singlet_triplet_num, mcscf_iter, mcscf_opt_iter and calculation_set is available in input_values.txt.
-2) Change the COLUMBUS path in input_values.txt to match the one in config.txt.
-3) Make it usable for multiple diradicals and then create the mcscf file in the mcscf prep and cisd prep in cisd-prep direcotry and on so that they don't have to come all the way back to give out all the values. 
-4) Options are to give a xyz file, a log file or the geom file itself. 
-5) For mcscf.sh, cisd.sh and aqcc.sh, the opportunity to redefine the input_values.txt. 
+DONE - 1) Ensure that all variables including high_spin, singlet_triplet_num, mcscf_iter, mcscf_opt_iter and calculation_set is available in input_values.txt.
+DONE - 2) Change the COLUMBUS path in input_values.txt to match the one in config.txt.
+DONE - 3) Make it usable for multiple diradicals and then create the mcscf file in the mcscf prep and cisd prep in cisd-prep direcotry and on so that they don't have to come all the way back to give out all the values. 
+DONE - 4) Options are to give a xyz file, a log file or the geom file itself. 
+DONE - 9) mocoef being copied or not after MCSCF is completed. 
+DONE - 11) Naming of SCRIPTS_DIR in cisd.sh files is inconsistent. SCRIPTS_DIR should point to Scripts/* and the current SCRIPTS_DIR should be just THIS_DIR or something. 
+
+DONE (NEEDS TESTING) - 7) Sometimes the drt table is different for each diradical
+
+DON'T DO - 5) For mcscf.sh, cisd.sh and aqcc.sh, the opportunity to redefine the input_values.txt. 
+DON'T DO - 8) Recursively check before running any particular .sh file that if the directory is how you want it to be.
+DON'T DO - 10) main.sh initialize - What happens if some work is already done but they still want to reinitialize? What would be the reason?
+
+6) requirements.txt (pandas, openpyxl) for the python scripts and expect existing and Columbus also if possible then we don't have to ask for it everytime. 
+11) Setting up such that Columbus folder can be done elsewhere and doesn't need to be in the adjacent directory as it is now. 
