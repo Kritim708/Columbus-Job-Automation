@@ -4,15 +4,24 @@ set -euo pipefail
 
 WORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MCSCF_DIR="$WORK_DIR/../MCSCF"
-SCRIPTS_DIR=$WORK_DIR
-while true;do
-    if [ -f "$SCRIPTS_DIR/main.sh" ] && [ -d "$SCRIPTS_DIR/Scripts" ]; then
-        SCRIPTS_DIR="$SCRIPTS_DIR/Scripts"
-        break
-    fi
-    [ "$SCRIPTS_DIR" != "/" ] || break
-    SCRIPTS_DIR="$(dirname "$SCRIPTS_DIR")"
-done
+SCRIPTS_DIR=""
+if [ -f "$WORK_DIR/config.txt" ]; then
+    SCRIPTS_DIR="$(awk 'index($0, "SCRIPTS_DIR=") == 1 { sub(/\r$/, ""); print substr($0, 13); exit }' "$WORK_DIR/config.txt")"
+fi
+if [ -z "$SCRIPTS_DIR" ]; then
+    search_dir="$WORK_DIR"
+    while true; do
+        if [ -f "$search_dir/main.sh" ] && [ -d "$search_dir/Scripts" ]; then
+            SCRIPTS_DIR="$search_dir/Scripts"
+            break
+        fi
+        [ "$search_dir" != "/" ] || break
+        search_dir="$(dirname "$search_dir")"
+    done
+fi
+if [ -z "$SCRIPTS_DIR" ]; then
+    SCRIPTS_DIR="$WORK_DIR"
+fi
 
 usage() {
     cat <<EOF
@@ -119,10 +128,25 @@ create_files() {
     fi
     command -v expect >/dev/null 2>&1 || fail "'expect' is not installed."
     (cd "$WORK_DIR" && expect ./mcscf.exp)
+    print_next_commands
+}
+
+print_next_commands() {
+    local columbus quoted_columbus
+    [ -f "$WORK_DIR/config.txt" ] || fail "Missing config.txt; cannot determine COLUMBUS."
+    columbus="$(awk 'index($0, "COLUMBUS=") == 1 { sub(/\r$/, ""); print substr($0, 10); exit }' "$WORK_DIR/config.txt")"
+    [ -n "$columbus" ] || fail "COLUMBUS is missing from config.txt."
+    printf -v quoted_columbus '%q' "$columbus"
+
+    printf '\nNow run the following commands:\n'
+    printf 'COLUMBUS=%s\n' "$quoted_columbus"
+    printf 'cp * ../MCSCF/.\n'
+    printf 'cd ../MCSCF\n'
+    printf '%s/runc -m 4000 > runls &\n' "$quoted_columbus"
 }
 
 clear_files() {
-    local keep=("mcscf.sh" "mcscf.exp" "input_values.txt" "geom")
+    local keep=("mcscf.sh" "mcscf.exp" "input_values.txt" "geom" "config.txt")
     local remove_list=()
     local f base skip k
 

@@ -1,1 +1,2 @@
 COLUMBUS=/usr/local/chem.sw/Columbus
+SCRIPTS_DIR=/home/kr7dh/Projects/COLUMBUS_JOB_AUTOMATION/git/Columbus-Job-Automation/Scripts

@@ -1,12 +1,18 @@
 # Ignore everything in Columbus except .gitkeep
 Columbus/*
 !Columbus/.gitkeep
+/diradicals/*
+!/diradicals/.gitkeep
 
 # Scripts folder: ignore everything except scripts and columbus.slurm
 Scripts/*.txt
 Scripts/*.xyz
 Scripts/*.log
 Scripts/diradicals/*
+
+#Test files
+tests/*
+notes.txt
 
 # Untrack log.out in the current directory
 log.out

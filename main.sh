@@ -4,6 +4,7 @@ set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DIR="$ROOT_DIR/Scripts"
+WORKING_DIR="$(pwd -P)"
 DEFAULT_COLUMBUS="/usr/local/chem.sw/Columbus"
 
 usage() {
@@ -15,7 +16,8 @@ Usage:
     $(basename "$0") -columbus_path PATH
 
 Initialize sets up one or more diradicals. Each diradical's geometry and
-DRT-derived input_values.txt are stored under Scripts/diradicals/<NAME>/.
+DRT-derived input_values.txt are stored under diradicals/<NAME>/ in the
+current working directory. Calculation folders are created under Columbus/.
 EOF
 }
 
@@ -31,6 +33,29 @@ read_columbus_path() {
     fi
 }
 
+set_config_value() {
+    local key="$1" value="$2" config_file="$SCRIPTS_DIR/config.txt" temp_file
+    mkdir -p "$SCRIPTS_DIR" || die "Could not create Scripts directory."
+    temp_file="$(mktemp "$SCRIPTS_DIR/.config.txt.XXXXXX")" || die "Could not create temporary config file."
+    if [ -f "$config_file" ]; then
+        CONFIG_KEY="$key" CONFIG_VALUE="$value" awk '
+            BEGIN { key = ENVIRON["CONFIG_KEY"]; value = ENVIRON["CONFIG_VALUE"] }
+            index($0, key "=") == 1 {
+                if (!written++) print key "=" value
+                next
+            }
+            { print }
+            END { if (!written) print key "=" value }
+        ' "$config_file" > "$temp_file" || {
+            rm -f -- "$temp_file"
+            die "Could not update '$config_file'."
+        }
+    else
+        printf '%s=%s\n' "$key" "$value" > "$temp_file"
+    fi
+    mv -- "$temp_file" "$config_file" || die "Could not update '$config_file'."
+}
+
 validate_columbus_path() {
     local path="$1" file
     for file in runc colinp xyz2col.x; do
@@ -39,27 +64,11 @@ validate_columbus_path() {
 }
 
 set_columbus_path() {
-    local path="$1" config_file="$SCRIPTS_DIR/config.txt" temp_file
+    local path="$1"
     validate_columbus_path "$path"
-    mkdir -p "$SCRIPTS_DIR" || die "Could not create Scripts directory."
-    temp_file="$(mktemp "$SCRIPTS_DIR/.config.txt.XXXXXX")" || die "Could not create temporary config file."
-    if [ -f "$config_file" ]; then
-        awk -v value="$path" '
-            index($0, "COLUMBUS=") == 1 {
-                if (!written++) print "COLUMBUS=" value
-                next
-            }
-            { print }
-            END { if (!written) print "COLUMBUS=" value }
-        ' "$config_file" > "$temp_file" || {
-            rm -f -- "$temp_file"
-            die "Could not update '$config_file'."
-        }
-    else
-        printf 'COLUMBUS=%s\n' "$path" > "$temp_file"
-    fi
-    mv -- "$temp_file" "$config_file" || die "Could not update '$config_file'."
-    echo "Saved Columbus path in $config_file."
+    set_config_value COLUMBUS "$path"
+    set_config_value SCRIPTS_DIR "$SCRIPTS_DIR"
+    echo "Saved Columbus path in $SCRIPTS_DIR/config.txt."
 }
 
 ensure_columbus_path() {
@@ -71,6 +80,7 @@ ensure_columbus_path() {
         set_columbus_path "$path"
     fi
     validate_columbus_path "$path"
+    set_config_value SCRIPTS_DIR "$SCRIPTS_DIR"
     COLUMBUS_PATH="$path"
 }
 
@@ -86,7 +96,7 @@ check_diradical() {
         echo "  Invalid format: '$d' (expected molecule_number, e.g. thiazole_24)." >&2
         return 1
     fi
-    if [ -e "$SCRIPTS_DIR/diradicals/$d" ]; then
+    if [ -e "$WORKING_DIR/diradicals/$d" ]; then
         echo "  '$d' is already initialized." >&2
         return 1
     fi
@@ -161,7 +171,7 @@ initialize() {
     done
 
     echo "Initialization complete."
-    echo "Next run Scripts/run.sh."
+    echo "Next run '$SCRIPTS_DIR/run.sh' from '$WORKING_DIR'."
 }
 
 add_diradical() {
@@ -175,7 +185,7 @@ add_diradical() {
     ensure_columbus_path
     bash "$SCRIPTS_DIR/Utilities/setup_diradical.sh" "$diradical" \
         || die "Setup failed for '$diradical'."
-    echo "Added $diradical. Next run Scripts/run.sh."
+    echo "Added $diradical. Next run '$SCRIPTS_DIR/run.sh' from '$WORKING_DIR'."
 }
 
 remove_diradical() {
@@ -191,9 +201,9 @@ remove_diradical() {
     validate_diradical "$diradical"
 
     paths=(
-        "$SCRIPTS_DIR/diradicals/$diradical"
-        "$ROOT_DIR/Columbus/DZ/$diradical"
-        "$ROOT_DIR/Columbus/TZ/$diradical"
+        "$WORKING_DIR/diradicals/$diradical"
+        "$WORKING_DIR/Columbus/DZ/$diradical"
+        "$WORKING_DIR/Columbus/TZ/$diradical"
     )
     for path in "${paths[@]}"; do
         if [ -e "$path" ] || [ -L "$path" ]; then
