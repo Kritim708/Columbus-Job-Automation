@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ROOT_DIR="$(cd "$SCRIPTS_DIR/.." && pwd)"
+WORKING_DIR="$(pwd -P)"
 UTILITIES_DIR="$SCRIPTS_DIR/Utilities"
 
 fail() { echo "Error: $*" >&2; exit 1; }
@@ -19,10 +19,10 @@ columbus="$(awk 'index($0, "COLUMBUS=") == 1 { sub(/\r$/, ""); print substr($0, 
 [ -f "$columbus/colinp" ] || fail "Could not find '$columbus/colinp' from '$config_file'."
 
 
-state_dir="$SCRIPTS_DIR/diradicals/$diradical"
+state_dir="$WORKING_DIR/diradicals/$diradical"
 [ ! -e "$state_dir" ] || fail "Diradical '$diradical' is already initialized at $state_dir."
-mkdir -p "$SCRIPTS_DIR/diradicals"
-work_dir="$(mktemp -d "$SCRIPTS_DIR/diradicals/.${diradical}.XXXXXX")"
+mkdir -p "$WORKING_DIR/diradicals"
+work_dir="$(mktemp -d "$WORKING_DIR/diradicals/.${diradical}.XXXXXX")"
 cleanup() {
     if [ -n "$work_dir" ] && [ -d "$work_dir" ]; then
         rm -rf -- "$work_dir"
@@ -90,7 +90,7 @@ mv -- "$work_dir" "$state_dir"
 work_dir=""
 for basis in DZ TZ; do
     for spin in Singlet Triplet; do
-        branch="$ROOT_DIR/Columbus/$basis/$diradical/$spin"
+        branch="$WORKING_DIR/Columbus/$basis/$diradical/$spin"
         mkdir -p "$branch/MCSCF" "$branch/CISD" "$branch/AQCC" \
             "$branch/MCSCF-prep" "$branch/CISD-prep" "$branch/AQCC-prep"
     done

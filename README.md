@@ -12,8 +12,8 @@ This project automates the setup and execution of Columbus quantum chemistry cal
   - `run.sh`: Stages method scripts into the calculation prep directories.
   - `AQCC/`, `CISD/`, `MCSCF/`: Each contains its method launcher and corresponding Expect scripts.
   - `Utilities/`: Geometry conversion, DRT parsing, log conversion, and manual input helpers.
-  - `diradicals/<NAME>/`: Source DRT/geometry plus that diradical's `input_values.txt` and Columbus `geom`.
-  - `config.txt` and shared templates remain at the `Scripts/` root.
+  - `config.txt` and shared templates remain beside the source scripts.
+- The current working directory is the calculation workspace. `diradicals/<NAME>/` stores source DRT/geometry and parsed values; `Columbus/` stores the DZ/TZ calculations.
 
 **Note:** The parallel execution scripts (`*par.exp`) are under development and may not be fully functional.
 
@@ -33,62 +33,44 @@ Below is exactly what main.sh asks for (in order) and how to respond or use the 
 1) Start
 - Make sure scripts are executable:
   ```bash
-  chmod +x main.sh
-  chmod +x Scripts/*.sh Scripts/AQCC/*.sh Scripts/CISD/*.sh Scripts/MCSCF/*.sh Scripts/Utilities/*.sh
-  chmod +x Scripts/AQCC/*.exp Scripts/CISD/*.exp Scripts/MCSCF/*.exp
+  chmod +x /path/to/Columbus-Job-Automation/Scripts/run.sh
+  chmod +x /path/to/Columbus-Job-Automation/Scripts/AQCC/*.sh /path/to/Columbus-Job-Automation/Scripts/CISD/*.sh /path/to/Columbus-Job-Automation/Scripts/MCSCF/*.sh /path/to/Columbus-Job-Automation/Scripts/Utilities/*.sh
   ```
 - Run:
   ```bash
-  bash main.sh initialize
+  cd /path/to/calculation-workspace
+  bash /path/to/Columbus-Job-Automation/main.sh initialize
   ```
 
-You can add another diradical later with `bash main.sh add_diradical thiazole_45` (omit the name to be prompted for it).
-Remove one with `bash main.sh remove_diradical thiazole_45`. The command lists existing per-diradical paths and asks for confirmation before deleting them; missing paths are skipped.
-Set or change the Columbus installation with `bash main.sh -columbus_path "/path/to/Columbus"`. Initialization reuses the configured path and prompts only when `Scripts/config.txt` has no `COLUMBUS=` value.
+You can add another diradical later with `bash /path/to/Columbus-Job-Automation/main.sh add_diradical thiazole_45` (omit the name to be prompted for it).
+Remove one with `bash /path/to/Columbus-Job-Automation/main.sh remove_diradical thiazole_45`. The command lists existing per-diradical paths and asks for confirmation before deleting them; missing paths are skipped.
+Set or change the Columbus installation with `bash /path/to/Columbus-Job-Automation/main.sh -columbus_path "/path/to/Columbus"`. Initialization reuses the configured path and prompts only when the code repository's `Scripts/config.txt` has no `COLUMBUS=` value.
 
 2) Diradical inputs
 - Enter all diradical names, then provide a geometry file for each one (`.xyz`, `.log`, or Columbus `geom`).
 - Choose whether to use one DRT table for all diradicals or provide a separate `.xlsx` for each.
-- Inputs and generated files are stored under `Scripts/diradicals/<NAME>/`; `Scripts/run.sh` stages the matching `geom` and values into each prep directory.
+- Inputs and generated files are stored under `diradicals/<NAME>/` in the current working directory; run the repository's `Scripts/run.sh` from that same directory to stage them into `Columbus/`.
 
 
-9) What main.sh does next
-- main.sh writes a `config.txt` that contains:
-  - calculation_set, run_parallel, use_slurm, slurm_path
-  - run_mcscf_*, run_cisd_*, run_aqcc_* flags for each multiplicity
-  - memory settings for each multiplicity/stage
-  - COLUMBUS path
-- main.sh then launches `Scripts/run.sh <Multiplicity>` in the background for each selected multiplicity.
-
-10) What `run.sh` does (high-level)
-- Loads `config.txt` and selects run parameters appropriate for the multiplicity passed to it.
-- Converts the calculation_set number to text label (DZ or TZ).
-- Determines run mode: `ser` or `par` depending on run_parallel.
-- Redirects all output to `Columbus/<DZ|TZ>/<Multiplicity>/log.out`.
-- MCSCF stage (if selected):
-  - Creates `MCSCF/` folder, copies input files and `mcscf.exp`, runs expect on `mcscf.exp`, then runs `$COLUMBUS/runc -m <mcscf_mem>` (or submits Slurm job).
-  - On success copies `MOCOEFS/mocoef_mc.sp` to `mocoef` for downstream use.
-- CISD stage (if selected):
-  - Prepares `CI/`, copies files and the appropriate `cisd-<ser|par>.exp`.
-  - Runs expect script; if `runc.error` contains "not enough memory" and "pscript failed" it will retry the expect script (so you may need to increase memory and re-run if the loop repeats).
-  - Runs `$COLUMBUS/runc -m <cisd_mem>` (or submits Slurm job).
-- AQCC stage (if selected):
-  - Similar to CISD: copies `aqcc-<ser|par>.exp`, retries expect on memory-detected failures, and runs `$COLUMBUS/runc -m <aqcc_mem>` (or via Slurm).
-- After all selected stages the script reports completion to the log.
+3) Stage calculation inputs
+- From the same calculation workspace, run the repository's staging script:
+  `bash /path/to/Columbus-Job-Automation/Scripts/run.sh [options]`
+- It reads `diradicals/` and creates or refreshes prep directories under the workspace's `Columbus/` tree.
+- Each prep directory receives its `geom`, generated `input_values.txt`, method launcher and Expect files, plus `config.txt` containing the source `SCRIPTS_DIR` for convergence checks.
 
 ---
 
 ## What to watch for and quick troubleshooting
 
-- COLUMBUS path: main.sh will check that `$COLUMBUS/runc` and `$COLUMBUS/colinp` exist. Fix the path if verification fails.
+- COLUMBUS path: configure with `main.sh -columbus_path`; it checks for `runc`, `colinp`, and `xyz2col.x`.
 - Expect must be installed and callable (used by the `.exp` scripts).
 - If you see repeated "not enough memory" and "pscript failed" in `runc.error`, increase the memory values when re-running main.sh (or edit the produced `config.txt`/`input_values.txt` and re-run the relevant stage manually).
 - Logs:
-  - Main consolidated log: `log.out` (created in repo root by main.sh)
+  - Main consolidated log: `log.out` (created in the calculation workspace by the workflow)
   - Per-run log: `Columbus/<DZ|TZ>/<Singlet|Triplet>/log.out`
   - Per-stage runc errors may be in `runc.error` inside the stage directory.
 - Reuse inputs:
-  - Each initialized diradical keeps its DRT-derived values under `Scripts/diradicals/<NAME>/input_values.txt` for later staging.
+  - Each initialized diradical keeps its DRT-derived values under `diradicals/<NAME>/input_values.txt` in the calculation workspace.
 - Parallel mode:
   - Experimental — verify resource availability and test on small systems before large production runs.
 - Slurm:

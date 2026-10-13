@@ -4,15 +4,24 @@ set -euo pipefail
 
 WORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CISD_DIR="$WORK_DIR/../CISD"
-SCRIPTS_DIR=$WORK_DIR
-while true;do
-    if [ -f "$SCRIPTS_DIR/main.sh" ] && [ -d "$SCRIPTS_DIR/Scripts" ]; then
-        SCRIPTS_DIR="$SCRIPTS_DIR/Scripts"
-        break
-    fi
-    [ "$SCRIPTS_DIR" != "/" ] || break
-    SCRIPTS_DIR="$(dirname "$SCRIPTS_DIR")"
-done
+SCRIPTS_DIR=""
+if [ -f "$WORK_DIR/config.txt" ]; then
+    SCRIPTS_DIR="$(awk 'index($0, "SCRIPTS_DIR=") == 1 { sub(/\r$/, ""); print substr($0, 13); exit }' "$WORK_DIR/config.txt")"
+fi
+if [ -z "$SCRIPTS_DIR" ]; then
+    search_dir="$WORK_DIR"
+    while true; do
+        if [ -f "$search_dir/main.sh" ] && [ -d "$search_dir/Scripts" ]; then
+            SCRIPTS_DIR="$search_dir/Scripts"
+            break
+        fi
+        [ "$search_dir" != "/" ] || break
+        search_dir="$(dirname "$search_dir")"
+    done
+fi
+if [ -z "$SCRIPTS_DIR" ]; then
+    SCRIPTS_DIR="$WORK_DIR"
+fi
 
 usage() {
     cat <<EOF
@@ -120,7 +129,7 @@ create_files() {
 }
 
 clear_files() {
-    local keep=("aqcc.sh" "aqcc-ser.exp" "aqcc-par.exp" "input_values.txt" )
+    local keep=("aqcc.sh" "aqcc-ser.exp" "aqcc-par.exp" "input_values.txt" "config.txt")
     local remove_list=()
     local f base skip k
     shopt -s nullglob 

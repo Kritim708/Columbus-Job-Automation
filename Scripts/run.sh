@@ -3,10 +3,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+WORKING_DIR="$(pwd -P)"
 CONFIG_FILE="$SCRIPT_DIR/config.txt"
 BASE_INPUT="$SCRIPT_DIR/input_values.txt"
-COLUMBUS_ROOT="$ROOT_DIR/Columbus"
+COLUMBUS_ROOT="$WORKING_DIR/Columbus"
 
 usage() {
     cat <<EOF
@@ -43,7 +43,7 @@ Optional global values (applied to every generated input_values.txt):
   -core-memory N     (default 20000)
 
 Per-diradical inputs:
-    Scripts/diradicals/<NAME>/input_values.txt and geom are used when present.
+    diradicals/<NAME>/input_values.txt and geom in the current directory are preferred.
     Legacy shared Scripts/input_values.txt and Scripts/geom remain fallbacks.
 
 Per-basis/spin overrides:
@@ -112,7 +112,7 @@ if [ -n "$filter_spin" ]; then
 fi
 
 if [ -f "$CONFIG_FILE" ]; then
-    COLUMBUS="$(awk -F= '/^COLUMBUS=/ { sub(/\r$/, "", $2); print $2; exit }' "$CONFIG_FILE")"
+    COLUMBUS="$(awk 'index($0, "COLUMBUS=") == 1 { sub(/\r$/, ""); print substr($0, 10); exit }' "$CONFIG_FILE")"
 fi
 [ -n "${COLUMBUS:-}" ] || fail "COLUMBUS is not configured; run '../main.sh initialize'."
 
@@ -148,7 +148,15 @@ stage_prep_dir() {
 
     mkdir -p "$prep_dir"
     rm -f "$prep_dir"/*
-    cp "$geometry_input" "$prep_dir/geom"
+            cp "$geometry_input" "$prep_dir/geom"
+    awk -v value="$SCRIPT_DIR" '
+        index($0, "SCRIPTS_DIR=") == 1 {
+            if (!written++) print "SCRIPTS_DIR=" value
+            next
+        }
+        { print }
+        END { if (!written) print "SCRIPTS_DIR=" value }
+    ' "$CONFIG_FILE" > "$prep_dir/config.txt"
 
     {
         cat "$base_input"
@@ -210,7 +218,7 @@ for basis_dir in "$COLUMBUS_ROOT"/*/; do
             [ -d "$spin_dir" ] || continue
 
             override_input="$spin_dir/input_values.txt"
-            diradical_input="$SCRIPT_DIR/diradicals/$diradical/input_values.txt"
+            diradical_input="$WORKING_DIR/diradicals/$diradical/input_values.txt"
             if [ -f "$override_input" ]; then
                 base_input="$override_input"
             elif [ -f "$diradical_input" ]; then
@@ -222,7 +230,7 @@ for basis_dir in "$COLUMBUS_ROOT"/*/; do
                 continue
             fi
 
-            diradical_geom="$SCRIPT_DIR/diradicals/$diradical/geom"
+            diradical_geom="$WORKING_DIR/diradicals/$diradical/geom"
             if [ -f "$diradical_geom" ]; then
                 geometry_input="$diradical_geom"
             elif [ -f "$SCRIPT_DIR/geom" ]; then
@@ -249,4 +257,4 @@ done
 [ "$prepared_count" -gt 0 ] || fail "No prep directories were prepared. Check spatial symmetry settings and directory structure."
 
 echo "Prepared $prepared_count stage directories."
-echo "Next: cd into a *-prep directory and run e.g. ./mcscf.sh -create_files"
+echo "Next: enter a *-prep directory under $COLUMBUS_ROOT and run e.g. ./mcscf.sh -create_files"
