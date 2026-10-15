@@ -4,6 +4,7 @@ set -euo pipefail
 
 WORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CISD_DIR="$WORK_DIR/../CISD"
+AQCC_DIR="$WORK_DIR/../AQCC"
 SCRIPTS_DIR=""
 if [ -f "$WORK_DIR/config.txt" ]; then
     SCRIPTS_DIR="$(awk 'index($0, "SCRIPTS_DIR=") == 1 { sub(/\r$/, ""); print substr($0, 13); exit }' "$WORK_DIR/config.txt")"
@@ -14,13 +15,16 @@ usage() {
     cat <<EOF
 Usage:
   $(basename "$0") -ser|-par -create_files [options]
+  $(basename "$0") -ser|-par -run_job [directory]
   $(basename "$0") -clear_files
 
 -ser / -par    : Run AQCC serially or in parallel (required with
-                 -create_files).
+                 -create_files or -run_job).
 -create_files  : Verifies input_values.txt, aqcc-<mode>.exp, and geom
                  are present, checks that ../CISD has completed output,
                  copies that output in, then runs aqcc-<mode>.exp.
+-run_job       : Copies files into the given directory and starts runc
+                 there. Defaults to ../AQCC relative to this script.
 -clear_files   : Removes everything this script generated, keeping only
                  aqcc.sh, aqcc-ser.exp, aqcc-par.exp, input_values.txt,
                  and geom.
@@ -39,6 +43,7 @@ Examples:
   $(basename "$0") -ser -create_files
   $(basename "$0") -ser -create_files -aqcc-iter 100
   $(basename "$0") -par -create_files -ncores 16 -mem-per-core 2500
+  $(basename "$0") -par -run_job
 EOF
 }
 
@@ -127,7 +132,8 @@ create_files() {
 
     command -v expect >/dev/null 2>&1 || fail "'expect' is not installed."
     (cd "$WORK_DIR" && expect "./aqcc-$mode.exp")
-    print_next_commands "$mode"
+    # print_next_commands "$mode"
+    printf 'Use ./aqcc.sh -run_job -%s path-to-directory to perform the calculations.\n' "$mode"
 }
 
 print_next_commands() {
@@ -149,6 +155,109 @@ print_next_commands() {
         printf '%s/runc -m %s > runls &\n' \
             "$quoted_columbus" "$core_memory"
     fi
+}
+
+read_input_integer() {
+    local key="$1"
+    local value
+    value="$(awk -v key="$key" '
+        $1 == "set" && $2 == key {
+            print $3
+            found = 1
+            exit
+        }
+        END { if (!found) exit 1 }
+    ' "$WORK_DIR/input_values.txt")" \
+        || fail "Missing key '$key' in input_values.txt"
+    [[ "$value" =~ ^[0-9]+$ ]] \
+        || fail "Value for '$key' in input_values.txt must be a non-negative integer."
+    printf '%s' "$value"
+}
+
+run_job() {
+    local target_path target_dir work_dir_real columbus job_memory job_ncores
+    local -a files
+
+    [ -n "$mode" ] || fail "Specify -ser or -par together with -run_job."
+    [ -f "$WORK_DIR/input_values.txt" ] \
+        || fail "Missing required file: input_values.txt"
+    [ -f "$WORK_DIR/config.txt" ] || fail "Missing config.txt; cannot determine COLUMBUS."
+    columbus="$(awk 'index($0, "COLUMBUS=") == 1 { sub(/\r$/, ""); print substr($0, 10); exit }' "$WORK_DIR/config.txt")"
+    [ -n "$columbus" ] || fail "COLUMBUS is missing from config.txt."
+    [ -x "$columbus/runc" ] || fail "COLUMBUS runc is missing or not executable: $columbus/runc"
+
+    job_memory="$core_memory"
+    if [ "$mode" = "par" ]; then
+        job_memory="$(read_input_integer core_memory)"
+        job_ncores="$(read_input_integer ncores)"
+        [ "$job_ncores" -gt 0 ] \
+            || fail "Value for 'ncores' in input_values.txt must be a positive integer."
+    fi
+
+    if [ -n "$run_job_path" ]; then
+        target_path="$run_job_path"
+    else
+        target_path="$AQCC_DIR/."
+    fi
+    [ -d "$target_path" ] || fail "Run directory does not exist: $target_path"
+    [ -w "$target_path" ] || fail "Run directory is not writable: $target_path"
+    target_dir="$(cd -- "$target_path" && pwd -P)" \
+        || fail "Cannot access run directory: $target_path"
+    work_dir_real="$(cd -- "$WORK_DIR" && pwd -P)"
+    case "$target_dir/" in
+        "$work_dir_real/"*)
+            fail "Run directory must be outside the AQCC prep directory."
+            ;;
+    esac
+    case "$work_dir_real/" in
+        "$target_dir/"*)
+            fail "Run directory must not contain the AQCC prep directory."
+            ;;
+    esac
+
+    shopt -s nullglob
+    files=("$WORK_DIR"/*)
+    shopt -u nullglob
+    [ "${#files[@]}" -gt 0 ] || fail "No files to copy from $WORK_DIR."
+    cp -R -- "${files[@]}" "$target_dir/"
+
+    (
+        local job_status
+        cd -- "$target_dir"
+
+        # Load the module in the same subshell environment before running the tool
+        module load columbus/722 || { echo "Error: Failed to load module columbus/722" >&2; exit 1; }
+
+        if [ "$mode" = "par" ]; then
+            if "$columbus/runc" -m "$job_memory" -nproc "$job_ncores" > runls; then
+                job_status=0
+            else
+                job_status=$?
+            fi
+        elif "$columbus/runc" -m "$job_memory" > runls; then
+            job_status=0
+        else
+            job_status=$?
+        fi
+
+        shopt -s nullglob
+        files=("$target_dir"/*)
+        shopt -u nullglob
+        if [ "${#files[@]}" -gt 0 ]; then
+            cp -R -- "${files[@]}" "$AQCC_DIR/" \
+                || { echo "Error: Failed to copy job files back to $AQCC_DIR." >&2; exit 1; }
+        fi
+
+        if [ "$job_status" -eq 0 ]; then
+            printf 'Job completed; copied results back to %s.\n' "$AQCC_DIR"
+        else
+            printf 'Job exited with status %s; copied results back to %s.\n' \
+                "$job_status" "$AQCC_DIR" >&2
+        fi
+        exit "$job_status"
+    ) &
+    printf 'Started %s AQCC job in %s (PID %s); results will be copied back to %s when it finishes.\n' \
+        "$mode" "$target_dir" "$!" "$AQCC_DIR"
 }
 
 
@@ -199,6 +308,7 @@ clear_files() {
 
 mode=""
 action=""
+run_job_path=""
 
 ncores=4
 aqcc_iter=""
@@ -224,6 +334,15 @@ while [ "$#" -gt 0 ]; do
         -create_files)
             action="create"
             shift
+            ;;
+
+        -run_job)
+            action="run_job"
+            shift
+            if [ "$#" -gt 0 ] && [[ "$1" != -* ]]; then
+                run_job_path="$1"
+                shift
+            fi
             ;;
 
         -clear_files)
@@ -306,6 +425,9 @@ case "$action" in
     create)
         [ -n "$mode" ] || fail "Specify -ser or -par together with -create_files."
         create_files "$mode"
+        ;;
+    run_job)
+        run_job
         ;;
     clear)
         clear_files

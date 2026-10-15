@@ -5,11 +5,12 @@ DONE - 4) Options are to give a xyz file, a log file or the geom file itself.
 DONE - 9) mocoef being copied or not after MCSCF is completed. 
 DONE - 11) Naming of SCRIPTS_DIR in cisd.sh files is inconsistent. SCRIPTS_DIR should point to Scripts/* and the current SCRIPTS_DIR should be just THIS_DIR or something. 
 DONE - 7) Sometimes the drt table is different for each diradical
-
-DONE (TESTING) 12) Setting up such that Columbus folder can be done elsewhere and doesn't need to be in the adjacent directory as it is now. 
+DONE - 14) Run the jobs somewhere else and copy it back when it's done. 
+DONE - 12) Setting up such that Columbus folder can be done elsewhere and doesn't need to be in the adjacent directory as it is now. 
 
 DON'T DO - 5) For mcscf.sh, cisd.sh and aqcc.sh, the opportunity to redefine the input_values.txt. 
 DON'T DO - 8) Recursively check before running any particular .sh file that if the directory is how you want it to be.
 DON'T DO - 10) main.sh initialize - What happens if some work is already done but they still want to reinitialize? What would be the reason?
 
 6) requirements.txt (pandas, openpyxl) for the python scripts and expect existing and Columbus also if possible then we don't have to ask for it everytime. 
+13) Encorporate Slurm script to run jobs. 

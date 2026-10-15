@@ -14,11 +14,14 @@ usage() {
     cat <<EOF
 Usage:
   $(basename "$0") -create_files [options]
+  $(basename "$0") -run_job [directory]
   $(basename "$0") -clear_files
 
 -create_files : Verifies input_values.txt, mcscf.exp, and geom are
                 present, then runs mcscf.exp to prepare the MCSCF
                 Columbus input files in this directory.
+-run_job      : Copies files into the given directory and starts runc
+                there. Defaults to ../MCSCF relative to this script.
 -clear_files  : Removes everything this script generated, keeping only
                 mcscf.sh, mcscf.exp, input_values.txt, and geom.
 -check_convergence  : Checks the convergence of the MCSCF calculation if it exists.
@@ -46,6 +49,7 @@ mcscf_iter=""
 mcscf_opt_iter=""
 core_memory=""
 core_memory_set=0
+run_job_path=""
 
 action=""
 
@@ -66,6 +70,15 @@ while [ "$#" -gt 0 ]; do
             [ -z "$action" ] || fail "Only one action may be specified."
             action="check_convergence"
             shift
+            ;;
+        -run_job)
+            [ -z "$action" ] || fail "Only one action may be specified."
+            action="run_job"
+            shift
+            if [ "$#" -gt 0 ] && [[ "$1" != -* ]]; then
+                run_job_path="$1"
+                shift
+            fi
             ;;
 
         -mcscf-iter)
@@ -113,6 +126,19 @@ set_input_value() {
     sed -i "s/^set $key .*/set $key $value/" "$WORK_DIR/input_values.txt"
 }
 
+load_core_memory() {
+    core_memory="$(awk '
+        $1 == "set" && $2 == "mcscf_mem" {
+            print $3
+            found = 1
+            exit
+        }
+        END { if (!found) exit 1 }
+    ' "$WORK_DIR/input_values.txt")" \
+        || fail "Missing key 'mcscf_mem' in input_values.txt"
+    [[ "$core_memory" =~ ^[0-9]+$ ]] \
+        || fail "Value for 'mcscf_mem' in input_values.txt must be a non-negative integer."
+}
 
 
 create_files() {
@@ -125,17 +151,7 @@ create_files() {
     if [ "$core_memory_set" -eq 1 ]; then
         set_input_value mcscf_mem "$core_memory"
     else
-        core_memory="$(awk '
-            $1 == "set" && $2 == "mcscf_mem" {
-                print $3
-                found = 1
-                exit
-            }
-            END { if (!found) exit 1 }
-        ' "$WORK_DIR/input_values.txt")" \
-            || fail "Missing key 'mcscf_mem' in input_values.txt"
-        [[ "$core_memory" =~ ^[0-9]+$ ]] \
-            || fail "Value for 'mcscf_mem' in input_values.txt must be a non-negative integer."
+        load_core_memory
     fi
 
     if [ -n "$mcscf_iter" ]; then
@@ -147,7 +163,9 @@ create_files() {
     fi
     command -v expect >/dev/null 2>&1 || fail "'expect' is not installed."
     (cd "$WORK_DIR" && expect ./mcscf.exp)
-    print_next_commands
+    # print_next_commands
+    printf 'Use ./mcscf.sh -run_job path-to-directory to perform the calculations.\n' 
+
 }
 
 print_next_commands() {
@@ -163,6 +181,76 @@ print_next_commands() {
     printf 'cd ../MCSCF\n'
     printf '%s/runc -m %s > runls &\n' "$quoted_columbus" "$core_memory"
 }
+
+run_job() {
+    local target_path target_dir work_dir_real columbus
+    local -a files
+
+    [ -f "$WORK_DIR/input_values.txt" ] \
+        || fail "Missing required file: input_values.txt"
+    load_core_memory
+
+    [ -f "$WORK_DIR/config.txt" ] || fail "Missing config.txt; cannot determine COLUMBUS."
+    columbus="$(awk 'index($0, "COLUMBUS=") == 1 { sub(/\r$/, ""); print substr($0, 10); exit }' "$WORK_DIR/config.txt")"
+    [ -n "$columbus" ] || fail "COLUMBUS is missing from config.txt."
+    [ -x "$columbus/runc" ] || fail "COLUMBUS runc is missing or not executable: $columbus/runc"
+
+    if [ -n "$run_job_path" ]; then
+        target_path="$run_job_path"
+    else
+        target_path="$MCSCF_DIR/."
+    fi
+    [ -d "$target_path" ] || fail "Run directory does not exist: $target_path"
+    [ -w "$target_path" ] || fail "Run directory is not writable: $target_path"
+    target_dir="$(cd -- "$target_path" && pwd -P)" \
+        || fail "Cannot access run directory: $target_path"
+    work_dir_real="$(cd -- "$WORK_DIR" && pwd -P)"
+    case "$target_dir/" in
+        "$work_dir_real/"*)
+            fail "Run directory must be outside the MCSCF prep directory."
+            ;;
+    esac
+    case "$work_dir_real/" in
+        "$target_dir/"*)
+            fail "Run directory must not contain the MCSCF prep directory."
+            ;;
+    esac
+
+    shopt -s nullglob
+    files=("$WORK_DIR"/*)
+    shopt -u nullglob
+    [ "${#files[@]}" -gt 0 ] || fail "No files to copy from $WORK_DIR."
+    cp -R -- "${files[@]}" "$target_dir/"
+
+    (
+        local job_status
+        cd -- "$target_dir"
+        if "$columbus/runc" -m "$core_memory" > runls; then
+            job_status=0
+        else
+            job_status=$?
+        fi
+
+        shopt -s nullglob
+        files=("$target_dir"/*)
+        shopt -u nullglob
+        if [ "${#files[@]}" -gt 0 ]; then
+            cp -R -- "${files[@]}" "$MCSCF_DIR/" \
+                || { echo "Error: Failed to copy job files back to $MCSCF_DIR." >&2; exit 1; }
+        fi
+
+        if [ "$job_status" -eq 0 ]; then
+            printf 'Job completed; copied results back to %s.\n' "$MCSCF_DIR"
+        else
+            printf 'Job exited with status %s; copied results back to %s.\n' \
+                "$job_status" "$MCSCF_DIR" >&2
+        fi
+        exit "$job_status"
+    ) &
+    printf 'Started Columbus job in %s (PID %s); results will be copied back to %s when it finishes.\n' \
+        "$target_dir" "$!" "$MCSCF_DIR"
+}
+
 
 clear_files() {
     local keep=("mcscf.sh" "mcscf.exp" "input_values.txt" "geom" "config.txt")
@@ -229,6 +317,11 @@ case "$action" in
         [ "$core_memory_set" -eq 0 ] \
             || fail "-core-memory can only be used with -create_files."
         check_convergence
+        ;;
+    run_job)
+        [ "$core_memory_set" -eq 0 ] \
+            || fail "-core-memory can only be used with -create_files."
+        run_job
         ;;
     *)
         [ "$core_memory_set" -eq 0 ] \
