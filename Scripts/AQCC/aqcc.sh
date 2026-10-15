@@ -8,20 +8,7 @@ SCRIPTS_DIR=""
 if [ -f "$WORK_DIR/config.txt" ]; then
     SCRIPTS_DIR="$(awk 'index($0, "SCRIPTS_DIR=") == 1 { sub(/\r$/, ""); print substr($0, 13); exit }' "$WORK_DIR/config.txt")"
 fi
-if [ -z "$SCRIPTS_DIR" ]; then
-    search_dir="$WORK_DIR"
-    while true; do
-        if [ -f "$search_dir/main.sh" ] && [ -d "$search_dir/Scripts" ]; then
-            SCRIPTS_DIR="$search_dir/Scripts"
-            break
-        fi
-        [ "$search_dir" != "/" ] || break
-        search_dir="$(dirname "$search_dir")"
-    done
-fi
-if [ -z "$SCRIPTS_DIR" ]; then
-    SCRIPTS_DIR="$WORK_DIR"
-fi
+
 
 usage() {
     cat <<EOF
@@ -43,15 +30,15 @@ Options for -create_files:
   -aqcc-opt-iter N   : Set AQCC optimization iterations (default: -1).
 
 Parallel-only options (valid only with -par):
-  -nproc COUNT       : Number of parallel cores (default: 4).
+  -ncores COUNT       : Number of parallel cores (default: 4).
   -mem-per-core N    : Memory per core (default: 750).
-  -ppn N             : Processes per node (default: 4).
-  -core-memory N     : Total core memory (default: 20000).
+  -processor_per_node N             : Override the default processor_per_node value (which follows -ncores).
+  -core-memory N     : Legacy option; set to -ncores x -mem-per-core.
 
 Examples:
   $(basename "$0") -ser -create_files
   $(basename "$0") -ser -create_files -aqcc-iter 100
-  $(basename "$0") -par -create_files -nproc 16 -core-memory 40000
+  $(basename "$0") -par -create_files -ncores 16 -mem-per-core 2500
 EOF
 }
 
@@ -93,28 +80,22 @@ create_files() {
         [ -f "$WORK_DIR/$f" ] || fail "Missing required file: $f"
     done
 
-    if [ -n "$aqcc_iter" ]; then
-        set_input_value aqcc_iter "$aqcc_iter"
-    fi
-
-    if [ -n "$aqcc_opt_iter" ]; then
-        set_input_value aqcc_opt_iter "$aqcc_opt_iter"
-    fi
-
-    if [ "$mode" = "par" ]; then
-        set_input_value nproc "$nproc"
-        set_input_value mem_per_core "$mem_per_core"
-        set_input_value ppn "$ppn"
-        set_input_value core_memory "$core_memory"
-    fi
-
     [ -d "$CISD_DIR" ] || fail "CISD directory not found at $CISD_DIR."
 
     local cisd_files=()
     local f
     shopt -s nullglob
     for f in "$CISD_DIR"/*; do
-        [ -f "$f" ] && cisd_files+=("$f")
+        [ -f "$f" ] || continue
+
+        filename="${f##*/}"
+
+        # Skip files that should not be copied
+        [[ "$filename" == "input_values.txt" ]] && continue
+        [[ "$filename" == *.exp ]] && continue
+        [[ "$filename" == *.sh ]] && continue
+
+        cisd_files+=("$f")
     done
     shopt -u nullglob
 
@@ -124,9 +105,52 @@ create_files() {
     [ -f "$CISD_DIR/GEOMS/geom.min" ] || fail "CISD job has not converged yet."
 
     cp -- "${cisd_files[@]}" "$WORK_DIR/"
+
+    if [ -n "$aqcc_iter" ]; then
+        set_input_value aqcc_iter "$aqcc_iter"
+    fi
+
+    if [ -n "$aqcc_opt_iter" ]; then
+        set_input_value aqcc_opt_iter "$aqcc_opt_iter"
+    fi
+
+    if [ "$mode" = "par" ]; then
+        if [ "$processor_per_node_explicit" -eq 0 ]; then
+            processor_per_node="$ncores"
+        fi
+        core_memory=$((ncores * mem_per_core))
+        set_input_value ncores "$ncores"
+        set_input_value mem_per_core "$mem_per_core"
+        set_input_value processor_per_node "$processor_per_node"
+        set_input_value core_memory "$core_memory"
+    fi
+
     command -v expect >/dev/null 2>&1 || fail "'expect' is not installed."
     (cd "$WORK_DIR" && expect "./aqcc-$mode.exp")
+    print_next_commands "$mode"
 }
+
+print_next_commands() {
+    local mode="$1"
+    local columbus quoted_columbus
+    [ -f "$WORK_DIR/config.txt" ] || fail "Missing config.txt; cannot determine COLUMBUS."
+    columbus="$(awk 'index($0, "COLUMBUS=") == 1 { sub(/\r$/, ""); print substr($0, 10); exit }' "$WORK_DIR/config.txt")"
+    [ -n "$columbus" ] || fail "COLUMBUS is missing from config.txt."
+    printf -v quoted_columbus '%q' "$columbus"
+
+    printf '\nNow run the following commands:\n'
+    printf 'COLUMBUS=%s\n' "$quoted_columbus"
+    printf 'cp * ../AQCC/.\n'
+    printf 'cd ../AQCC\n'
+    if [ "$mode" = "par" ]; then
+        printf '%s/runc -m %s -nproc %s > runls &\n' \
+            "$quoted_columbus" "$core_memory" "$ncores"
+    else
+        printf '%s/runc -m %s > runls &\n' \
+            "$quoted_columbus" "$core_memory"
+    fi
+}
+
 
 clear_files() {
     local keep=("aqcc.sh" "aqcc-ser.exp" "aqcc-par.exp" "input_values.txt" "config.txt")
@@ -176,12 +200,13 @@ clear_files() {
 mode=""
 action=""
 
-nproc=4
+ncores=4
 aqcc_iter=""
 aqcc_opt_iter=""
 mem_per_core=750
 
-ppn=4
+processor_per_node=4
+processor_per_node_explicit=0
 core_memory=20000
 
 while [ "$#" -gt 0 ]; do
@@ -211,9 +236,9 @@ while [ "$#" -gt 0 ]; do
             shift
             ;;
 
-        -nproc)
+        -ncores)
             require_value "$1" "$@"
-            nproc="$2"
+            ncores="$2"
             shift 2
             ;;
 
@@ -235,9 +260,10 @@ while [ "$#" -gt 0 ]; do
             shift 2
             ;;
 
-        -ppn)
+        -processor_per_node)
             require_value "$1" "$@"
-            ppn="$2"
+            processor_per_node="$2"
+            processor_per_node_explicit=1
             shift 2
             ;;
 
@@ -257,20 +283,22 @@ while [ "$#" -gt 0 ]; do
             ;;
     esac
 done
-validate_integer "-nproc" "$nproc"
-validate_integer "-mem-per-core" "$mem_per_core"
-validate_integer "-ppn" "$ppn"
+[[ "$ncores" =~ ^[1-9][0-9]*$ ]] \
+    || fail "-ncores must be a positive integer."
+[[ "$mem_per_core" =~ ^[1-9][0-9]*$ ]] \
+    || fail "-mem-per-core must be a positive integer."
+validate_integer "-processor_per_node" "$processor_per_node"
 validate_integer "-core-memory" "$core_memory"
 
 [ -z "$aqcc_iter" ]     || validate_integer "-aqcc-iter" "$aqcc_iter"
 [ -z "$aqcc_opt_iter" ] || validate_integer "-aqcc-opt-iter" "$aqcc_opt_iter"
 
 if [ "$mode" = "ser" ]; then
-    if [ "$nproc" -ne 4 ] || \
+    if [ "$ncores" -ne 4 ] || \
        [ "$mem_per_core" -ne 750 ] || \
-       [ "$ppn" -ne 4 ] || \
+       [ "$processor_per_node" -ne 4 ] || \
        [ "$core_memory" -ne 20000 ]; then
-        fail "-nproc, -mem-per-core, -ppn, and -core-memory are only valid with -par."
+        fail "-ncores, -mem-per-core, -processor_per_node, and -core-memory are only valid with -par."
     fi
 fi
 

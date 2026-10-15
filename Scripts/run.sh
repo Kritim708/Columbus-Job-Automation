@@ -30,7 +30,7 @@ Optional filters (default: all found under Columbus/):
 
 Optional global values (applied to every generated input_values.txt):
   -m MB              memory (default 4000)
-  -nproc COUNT       parallel cores (default 4)
+  -ncores COUNT       parallel cores (default 4)
   -mcscf-iter N       (default -1)
   -mcscf-opt-iter N   (default -1)
   -cisd-iter N        (default -1)
@@ -62,7 +62,7 @@ filter_basis=""
 filter_diradical=""
 filter_spin=""
 memory=4000
-nproc=4
+ncores=4
 mcscf_iter=-1
 mcscf_opt_iter=-1
 cisd_iter=-1
@@ -80,7 +80,7 @@ while [ "$#" -gt 0 ]; do
         -diradical) require_value "$1" "$@"; filter_diradical="$2"; shift 2 ;;
         -spin) require_value "$1" "$@"; filter_spin="$2"; shift 2 ;;
         -m) require_value "$1" "$@"; memory="$2"; shift 2 ;;
-        -nproc) require_value "$1" "$@"; nproc="$2"; shift 2 ;;
+        -ncores) require_value "$1" "$@"; ncores="$2"; shift 2 ;;
         -mcscf-iter) require_value "$1" "$@"; mcscf_iter="$2"; shift 2 ;;
         -mcscf-opt-iter) require_value "$1" "$@"; mcscf_opt_iter="$2"; shift 2 ;;
         -cisd-iter) require_value "$1" "$@"; cisd_iter="$2"; shift 2 ;;
@@ -97,7 +97,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 [[ "$memory" =~ ^[0-9]+$ ]] || fail "Memory must be a non-negative integer."
-[[ "$nproc" =~ ^[1-9][0-9]*$ ]] || fail "-nproc must be a positive integer."
+[[ "$ncores" =~ ^[1-9][0-9]*$ ]] || fail "-ncores COUNT must be a positive integer."
 
 if [ -n "$filter_basis" ]; then
     filter_basis="$(echo "$filter_basis" | tr '[:lower:]' '[:upper:]')"
@@ -176,7 +176,7 @@ stage_prep_dir() {
         echo "set mcscf_mem $memory"
         echo "set cisd_mem $memory"
         echo "set aqcc_mem $memory"
-        echo "set ncores $nproc"
+        echo "set ncores $ncores"
         echo "set mem_per_core $mem_per_core"
         echo "set bandwidth $bandwidth"
         echo "set processor_per_node $processor_per_node"

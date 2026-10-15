@@ -92,6 +92,7 @@ validate_diradical() {
 # Returns 0 if valid; otherwise prints the reason to stderr and returns 1
 check_diradical() {
     local d="$1"
+    [[ "$d" == 'q' ]] && return 1
     if [[ ! "$d" =~ ^[a-zA-Z0-9]+_[0-9]+$ ]]; then
         echo "  Invalid format: '$d' (expected molecule_number, e.g. thiazole_24)." >&2
         return 1

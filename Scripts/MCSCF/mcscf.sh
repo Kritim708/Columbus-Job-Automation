@@ -8,20 +8,7 @@ SCRIPTS_DIR=""
 if [ -f "$WORK_DIR/config.txt" ]; then
     SCRIPTS_DIR="$(awk 'index($0, "SCRIPTS_DIR=") == 1 { sub(/\r$/, ""); print substr($0, 13); exit }' "$WORK_DIR/config.txt")"
 fi
-if [ -z "$SCRIPTS_DIR" ]; then
-    search_dir="$WORK_DIR"
-    while true; do
-        if [ -f "$search_dir/main.sh" ] && [ -d "$search_dir/Scripts" ]; then
-            SCRIPTS_DIR="$search_dir/Scripts"
-            break
-        fi
-        [ "$search_dir" != "/" ] || break
-        search_dir="$(dirname "$search_dir")"
-    done
-fi
-if [ -z "$SCRIPTS_DIR" ]; then
-    SCRIPTS_DIR="$WORK_DIR"
-fi
+
 
 usage() {
     cat <<EOF
@@ -38,6 +25,7 @@ Usage:
 Options for -create_files:
   -mcscf-iter N
   -mcscf-opt-iter N
+  -core-memory N    Override the MCSCF memory value (default: input_values.txt)
 EOF
 }
 
@@ -51,12 +39,13 @@ validate_integer() {
 
 fail() { echo "Error: $*" >&2; exit 1; }
 require_value() {
-    [ "$#" -ge 2 ] || fail "$1 requires a value."
-    [[ "$2" != -* ]] || fail "$1 requires a value."
+    [ "$#" -ge 2 ] && [ -n "$2" ] || fail "$1 requires a value."
 }
 
 mcscf_iter=""
 mcscf_opt_iter=""
+core_memory=""
+core_memory_set=0
 
 action=""
 
@@ -80,14 +69,21 @@ while [ "$#" -gt 0 ]; do
             ;;
 
         -mcscf-iter)
-            require_value "$1" "$@"
+            require_value "$1" "${2-}"
             mcscf_iter="$2"
             shift 2
             ;;
 
         -mcscf-opt-iter)
-            require_value "$1" "$@"
+            require_value "$1" "${2-}"
             mcscf_opt_iter="$2"
+            shift 2
+            ;;
+
+        -core-memory)
+            require_value "$1" "${2-}"
+            core_memory="$2"
+            core_memory_set=1
             shift 2
             ;;
 
@@ -104,10 +100,16 @@ done
 
 [ -z "$mcscf_iter" ]     || validate_integer "-mcscf-iter" "$mcscf_iter"
 [ -z "$mcscf_opt_iter" ] || validate_integer "-mcscf-opt-iter" "$mcscf_opt_iter"
+if [ "$core_memory_set" -eq 1 ]; then
+    [[ "$core_memory" =~ ^[0-9]+$ ]] \
+        || fail "-core-memory must be a non-negative integer."
+fi
 
 set_input_value() {
     local key="$1"
     local value="$2"
+    grep -q "^set $key " "$WORK_DIR/input_values.txt" \
+        || fail "Missing key '$key' in input_values.txt"
     sed -i "s/^set $key .*/set $key $value/" "$WORK_DIR/input_values.txt"
 }
 
@@ -119,6 +121,23 @@ create_files() {
     for f in "${required[@]}"; do
         [ -f "$WORK_DIR/$f" ] || fail "Missing required file: $f"
     done
+
+    if [ "$core_memory_set" -eq 1 ]; then
+        set_input_value mcscf_mem "$core_memory"
+    else
+        core_memory="$(awk '
+            $1 == "set" && $2 == "mcscf_mem" {
+                print $3
+                found = 1
+                exit
+            }
+            END { if (!found) exit 1 }
+        ' "$WORK_DIR/input_values.txt")" \
+            || fail "Missing key 'mcscf_mem' in input_values.txt"
+        [[ "$core_memory" =~ ^[0-9]+$ ]] \
+            || fail "Value for 'mcscf_mem' in input_values.txt must be a non-negative integer."
+    fi
+
     if [ -n "$mcscf_iter" ]; then
         set_input_value mcscf_iter "$mcscf_iter"
     fi
@@ -142,7 +161,7 @@ print_next_commands() {
     printf 'COLUMBUS=%s\n' "$quoted_columbus"
     printf 'cp * ../MCSCF/.\n'
     printf 'cd ../MCSCF\n'
-    printf '%s/runc -m 4000 > runls &\n' "$quoted_columbus"
+    printf '%s/runc -m %s > runls &\n' "$quoted_columbus" "$core_memory"
 }
 
 clear_files() {
@@ -202,12 +221,18 @@ case "$action" in
         create_files
         ;;
     clear)
+        [ "$core_memory_set" -eq 0 ] \
+            || fail "-core-memory can only be used with -create_files."
         clear_files
         ;;
     check_convergence)
+        [ "$core_memory_set" -eq 0 ] \
+            || fail "-core-memory can only be used with -create_files."
         check_convergence
         ;;
     *)
+        [ "$core_memory_set" -eq 0 ] \
+            || fail "-core-memory can only be used with -create_files."
         usage
         exit 2
         ;;
