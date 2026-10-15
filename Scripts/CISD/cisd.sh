@@ -8,20 +8,7 @@ SCRIPTS_DIR=""
 if [ -f "$WORK_DIR/config.txt" ]; then
     SCRIPTS_DIR="$(awk 'index($0, "SCRIPTS_DIR=") == 1 { sub(/\r$/, ""); print substr($0, 13); exit }' "$WORK_DIR/config.txt")"
 fi
-if [ -z "$SCRIPTS_DIR" ]; then
-    search_dir="$WORK_DIR"
-    while true; do
-        if [ -f "$search_dir/main.sh" ] && [ -d "$search_dir/Scripts" ]; then
-            SCRIPTS_DIR="$search_dir/Scripts"
-            break
-        fi
-        [ "$search_dir" != "/" ] || break
-        search_dir="$(dirname "$search_dir")"
-    done
-fi
-if [ -z "$SCRIPTS_DIR" ]; then
-    SCRIPTS_DIR="$WORK_DIR"
-fi
+
 
 
 
@@ -39,6 +26,21 @@ Usage:
 -clear_files   : Removes everything this script generated, keeping only
                  cisd.sh, cisd-ser.exp, cisd-par.exp, input_values.txt,
                  and geom.
+
+                 Options for -create_files:
+  -cisd-iter N       : Set maximum CISD iterations (default: -1).
+  -cisd-opt-iter N   : Set CISD optimization iterations (default: -1).
+
+Parallel-only options (valid only with -par):
+  -ncores COUNT       : Number of parallel cores (default: 4).
+  -mem-per-core N    : Memory per core (default: 750).
+  -processor_per_node N             : Override the default processor_per_node value (which follows -ncores).
+  -core-memory N     : Legacy option; set to -ncores x -mem-per-core.
+
+Examples:
+  $(basename "$0") -ser -create_files
+  $(basename "$0") -ser -create_files -cisd-iter 100
+  $(basename "$0") -par -create_files -cisd-iter 100 -ncores 16 -mem-per-core 2500
 EOF
 }
 
@@ -80,21 +82,22 @@ create_files() {
         [ -f "$WORK_DIR/$f" ] || fail "Missing required file: $f"
     done
 
-    if [ -n "$cisd_iter" ]; then
-        set_input_value cisd_iter "$cisd_iter"
-    fi
-
-    if [ -n "$cisd_opt_iter" ]; then
-        set_input_value cisd_opt_iter "$cisd_opt_iter"
-    fi
-
     [ -d "$MCSCF_DIR" ] || fail "MCSCF directory not found at $MCSCF_DIR."
 
     local mcscf_files=()
     local f
     shopt -s nullglob
     for f in "$MCSCF_DIR"/*; do
-        [ -f "$f" ] && mcscf_files+=("$f")
+        [ -f "$f" ] || continue
+
+        filename="${f##*/}"
+
+        # Skip files that should not be copied
+        [[ "$filename" == "input_values.txt" ]] && continue
+        [[ "$filename" == *.exp ]] && continue
+        [[ "$filename" == *.sh ]] && continue
+
+        mcscf_files+=("$f")
     done
     shopt -u nullglob
 
@@ -105,12 +108,33 @@ create_files() {
 
     cp -- "${mcscf_files[@]}" "$WORK_DIR/"
     cp $MCSCF_DIR/MOCOEFS/mocoef_mc.sp "$WORK_DIR/mocoef"
+
+    if [ -n "$cisd_iter" ]; then
+        set_input_value cisd_iter "$cisd_iter"
+    fi
+
+    if [ -n "$cisd_opt_iter" ]; then
+        set_input_value cisd_opt_iter "$cisd_opt_iter"
+    fi
+
+    if [ "$mode" = "par" ]; then
+        if [ "$processor_per_node_explicit" -eq 0 ]; then
+            processor_per_node="$ncores"
+        fi
+        core_memory=$((ncores * mem_per_core))
+        set_input_value ncores "$ncores"
+        set_input_value mem_per_core "$mem_per_core"
+        set_input_value processor_per_node "$processor_per_node"
+        set_input_value core_memory "$core_memory"
+    fi
+
     command -v expect >/dev/null 2>&1 || fail "'expect' is not installed."
     (cd "$WORK_DIR" && expect "./cisd-$mode.exp")
-    print_next_commands
+    print_next_commands "$mode"
 }
 
 print_next_commands() {
+    local mode="$1"
     local columbus quoted_columbus
     [ -f "$WORK_DIR/config.txt" ] || fail "Missing config.txt; cannot determine COLUMBUS."
     columbus="$(awk 'index($0, "COLUMBUS=") == 1 { sub(/\r$/, ""); print substr($0, 10); exit }' "$WORK_DIR/config.txt")"
@@ -121,7 +145,13 @@ print_next_commands() {
     printf 'COLUMBUS=%s\n' "$quoted_columbus"
     printf 'cp * ../CISD/.\n'
     printf 'cd ../CISD\n'
-    printf '%s/runc -m 4000 > runls &\n' "$quoted_columbus"
+    if [ "$mode" = "par" ]; then
+        printf '%s/runc -m %s -nproc %s > runls &\n' \
+            "$quoted_columbus" "$core_memory" "$ncores"
+    else
+        printf '%s/runc -m %s > runls &\n' \
+            "$quoted_columbus" "$core_memory"
+    fi
 }
 
 
@@ -173,12 +203,13 @@ clear_files() {
 mode=""
 action=""
 
-nproc=4
+ncores=4
 cisd_iter=""
 cisd_opt_iter=""
 mem_per_core=750
 
-ppn=4
+processor_per_node=4
+processor_per_node_explicit=0
 core_memory=20000
 
 while [ "$#" -gt 0 ]; do
@@ -208,9 +239,9 @@ while [ "$#" -gt 0 ]; do
             shift
             ;;
 
-        -nproc)
+        -ncores)
             require_value "$1" "$@"
-            nproc="$2"
+            ncores="$2"
             shift 2
             ;;
 
@@ -232,9 +263,10 @@ while [ "$#" -gt 0 ]; do
             shift 2
             ;;
 
-        -ppn)
+        -processor_per_node)
             require_value "$1" "$@"
-            ppn="$2"
+            processor_per_node="$2"
+            processor_per_node_explicit=1
             shift 2
             ;;
 
@@ -254,20 +286,22 @@ while [ "$#" -gt 0 ]; do
             ;;
     esac
 done
-validate_integer "-nproc" "$nproc"
-validate_integer "-mem-per-core" "$mem_per_core"
-validate_integer "-ppn" "$ppn"
+[[ "$ncores" =~ ^[1-9][0-9]*$ ]] \
+    || fail "-ncores must be a positive integer."
+[[ "$mem_per_core" =~ ^[1-9][0-9]*$ ]] \
+    || fail "-mem-per-core must be a positive integer."
+validate_integer "-processor_per_node" "$processor_per_node"
 validate_integer "-core-memory" "$core_memory"
 
 [ -z "$cisd_iter" ]     || validate_integer "-cisd-iter" "$cisd_iter"
 [ -z "$cisd_opt_iter" ] || validate_integer "-cisd-opt-iter" "$cisd_opt_iter"
 
 if [ "$mode" = "ser" ]; then
-    if [ "$nproc" -ne 4 ] || \
+    if [ "$ncores" -ne 4 ] || \
        [ "$mem_per_core" -ne 750 ] || \
-       [ "$ppn" -ne 4 ] || \
+       [ "$processor_per_node" -ne 4 ] || \
        [ "$core_memory" -ne 20000 ]; then
-        fail "-nproc, -mem-per-core, -ppn, and -core-memory are only valid with -par."
+        fail "-ncores, -mem-per-core, -processor_per_node, and -core-memory are only valid with -par."
     fi
 fi
 
