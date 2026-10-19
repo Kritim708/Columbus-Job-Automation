@@ -18,6 +18,7 @@ usage() {
 Usage:
   $(basename "$0") -ser|-par -create_files
   $(basename "$0") -ser|-par -run_job [directory]
+  $(basename "$0") -create_slurm [MEMORY_MB]
   $(basename "$0") -clear_files
 
 -ser / -par    : Run CISD serially or in parallel (required with
@@ -30,6 +31,10 @@ Usage:
 -clear_files   : Removes everything this script generated, keeping only
                  cisd.sh, cisd-ser.exp, cisd-par.exp, input_values.txt,
                  and geom.
+-create_slurm  : Creates parallelSpydurColumbus722.slurm in the current
+                 directory using its partitioned_*cpu_*bw_*mb.dat file.
+                 Prompts for a mail address. Optional MEMORY_MB must be
+                 greater than the file's calculated memory requirement.
 
                  Options for -create_files:
   -cisd-iter N       : Set maximum CISD iterations (default: -1).
@@ -309,9 +314,115 @@ clear_files() {
     echo "Cleared generated files; kept: ${keep[*]}"
 }
 
+create_slurm() {
+    local template email="" data_file data_name
+    local cpu_count memory_per_cpu required_memory total_memory
+    local slurm_memory memory_per_process temp_file
+    local -a candidates=() matches=()
+
+    [ -n "$SCRIPTS_DIR" ] \
+        || fail "SCRIPTS_DIR is missing from $WORK_DIR/config.txt."
+    template="$SCRIPTS_DIR/parallelSpydurColumbus722.slurm"
+    [ -f "$template" ] || fail "Slurm template not found: $template"
+    [ -r "$template" ] || fail "Slurm template is not readable: $template"
+
+    read -r -p "Enter email address for Slurm notifications (leave empty to keep the template value): " email
+
+    shopt -s nullglob
+    candidates=("$WORK_DIR"/partitioned_*cpu_*bw_*mb.dat)
+    shopt -u nullglob
+    for data_file in "${candidates[@]}"; do
+        data_name="${data_file##*/}"
+        if [[ "$data_name" =~ ^partitioned_([0-9]+)cpu_[0-9]+bw_([0-9]+)mb\.dat$ ]]; then
+            matches+=("$data_file")
+        fi
+    done
+    [ "${#matches[@]}" -eq 1 ] \
+        || fail "Expected exactly one partitioned_<CPUs>cpu_<bandwidth>bw_<MEMORY>mb.dat file in $WORK_DIR; found ${#matches[@]}."
+
+    data_name="${matches[0]##*/}"
+    [[ "$data_name" =~ ^partitioned_([0-9]+)cpu_[0-9]+bw_([0-9]+)mb\.dat$ ]] \
+        || fail "Could not extract CPU and memory values from $data_name."
+    cpu_count=$((10#${BASH_REMATCH[1]}))
+    memory_per_cpu=$((10#${BASH_REMATCH[2]}))
+    [ "$cpu_count" -gt 0 ] || fail "CPU count in $data_name must be positive."
+    [ "$memory_per_cpu" -gt 0 ] || fail "Memory value in $data_name must be positive."
+    required_memory=$((cpu_count * memory_per_cpu))
+
+    if [ -n "$create_slurm_memory" ]; then
+        [[ "$create_slurm_memory" =~ ^[0-9]+$ ]] \
+            || fail "Optional Slurm memory must be a positive integer in MB."
+        total_memory=$((10#$create_slurm_memory))
+        [ "$total_memory" -gt "$required_memory" ] \
+            || fail "Slurm memory must be greater than the calculated requirement of ${required_memory} MB."
+    else
+        total_memory="$required_memory"
+    fi
+    slurm_memory="$total_memory"
+    memory_per_process=$((total_memory / cpu_count))
+
+    if [ -n "$email" ] && [[ "$email" == *$'\n'* || "$email" == *$'\r'* ]]; then
+        fail "Email address must not contain newline characters."
+    fi
+    temp_file="$(mktemp "$WORK_DIR/.parallelSpydurColumbus722.slurm.XXXXXX")" \
+        || fail "Could not create a temporary Slurm file in $WORK_DIR."
+    if ! SLURM_EMAIL="$email" \
+        SLURM_MEMORY="$slurm_memory" \
+        SLURM_CPUS="$cpu_count" \
+        SLURM_MEMORY_PER_PROCESS="$memory_per_process" \
+        awk '
+            /^#SBATCH --mail-user=/ {
+                mail_count++
+                if (ENVIRON["SLURM_EMAIL"] != "") {
+                    print "#SBATCH --mail-user=" ENVIRON["SLURM_EMAIL"]
+                    next
+                }
+                print
+                next
+            }
+            /^#SBATCH --mem=/ {
+                mem_count++
+                print "#SBATCH --mem=" ENVIRON["SLURM_MEMORY"] "M"
+                next
+            }
+            /^#SBATCH --cpus-per-task=/ {
+                cpu_count++
+                print "#SBATCH --cpus-per-task=" ENVIRON["SLURM_CPUS"]
+                next
+            }
+            /^TOTAL_MEM=/ {
+                total_count++
+                print "TOTAL_MEM=" ENVIRON["SLURM_MEMORY"] "      # Total memory in MB (equal to SBATCH --mem)"
+                next
+            }
+            /^MEM_PER_PROC=/ {
+                process_count++
+                print "MEM_PER_PROC=" ENVIRON["SLURM_MEMORY_PER_PROCESS"] "    # Memory per process in MB (number given by colinp + some padding)"
+                next
+            }
+            { print }
+            END {
+                if (mail_count != 1 || mem_count != 1 || cpu_count != 1 ||
+                    total_count != 1 || process_count != 1) {
+                    print "Error: Slurm template must contain exactly one each of the mail, memory, CPU, TOTAL_MEM, and MEM_PER_PROC settings." > "/dev/stderr"
+                    exit 1
+                }
+            }
+        ' "$template" > "$temp_file"; then
+        rm -f -- "$temp_file"
+        fail "Could not generate Slurm file from $template."
+    fi
+
+    mv -- "$temp_file" "$WORK_DIR/parallelSpydurColumbus722.slurm" \
+        || { rm -f -- "$temp_file"; fail "Could not save Slurm file in $WORK_DIR."; }
+    printf 'Created %s/parallelSpydurColumbus722.slurm (CPUs: %s, memory: %s MB, memory per process: %s MB).\n' \
+        "$WORK_DIR" "$cpu_count" "$total_memory" "$memory_per_process"
+}
+
 mode=""
 action=""
 run_job_path=""
+create_slurm_memory=""
 
 ncores=4
 cisd_iter=""
@@ -351,6 +462,15 @@ while [ "$#" -gt 0 ]; do
         -clear_files)
             action="clear"
             shift
+            ;;
+
+        -create_slurm)
+            action="create_slurm"
+            shift
+            if [ "$#" -gt 0 ] && [[ "$1" != -* ]]; then
+                create_slurm_memory="$1"
+                shift
+            fi
             ;;
 
         -check_convergence)
@@ -434,6 +554,9 @@ case "$action" in
         ;;
     clear)
         clear_files
+        ;;
+    create_slurm)
+        create_slurm
         ;;
     check_convergence)
         check_convergence
