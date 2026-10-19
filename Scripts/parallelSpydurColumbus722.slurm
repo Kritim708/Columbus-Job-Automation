@@ -3,7 +3,7 @@
 #SBATCH --output=columbus722.%j.out
 #SBATCH --ntasks=1
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=jake.siegel@richmond.edu
+#SBATCH --mail-user=your.email@richmond.edu
 #SBATCH --partition=parish
 #SBATCH --mem=720G
 #SBATCH --cpus-per-task=20
