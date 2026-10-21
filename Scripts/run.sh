@@ -185,16 +185,13 @@ stage_prep_dir() {
 
     case "$stage" in
         MCSCF)
-            cp "$SCRIPT_DIR/MCSCF/mcscf.sh" "$SCRIPT_DIR/MCSCF/mcscf.exp" "$prep_dir/"
-            chmod +x "$prep_dir/mcscf.sh"
+            cp "$SCRIPT_DIR/MCSCF/mcscf.exp" "$prep_dir/"
             ;;
         CISD)
-            cp "$SCRIPT_DIR/CISD/cisd.sh" "$SCRIPT_DIR/CISD/cisd-ser.exp" "$SCRIPT_DIR/CISD/cisd-par.exp" "$prep_dir/"
-            chmod +x "$prep_dir/cisd.sh"
+            cp "$SCRIPT_DIR/CISD/cisd-ser.exp" "$SCRIPT_DIR/CISD/cisd-par.exp" "$prep_dir/"
             ;;
         AQCC)
-            cp "$SCRIPT_DIR/AQCC/aqcc.sh" "$SCRIPT_DIR/AQCC/aqcc-ser.exp" "$SCRIPT_DIR/AQCC/aqcc-par.exp" "$prep_dir/"
-            chmod +x "$prep_dir/aqcc.sh"
+            cp "$SCRIPT_DIR/AQCC/aqcc-ser.exp" "$SCRIPT_DIR/AQCC/aqcc-par.exp" "$prep_dir/"
             ;;
     esac
 

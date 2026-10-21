@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-WORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORK_DIR="$PWD"
 MCSCF_DIR="$WORK_DIR/../MCSCF"
 SCRIPTS_DIR=""
 if [ -f "$WORK_DIR/config.txt" ]; then
