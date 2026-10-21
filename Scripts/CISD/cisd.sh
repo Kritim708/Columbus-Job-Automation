@@ -183,7 +183,7 @@ read_input_integer() {
 }
 
 run_job() {
-    local target_path target_dir work_dir_real columbus job_memory job_ncores
+    local target_path target_dir work_dir_real columbus job_memory job_ncores response
     local -a files
 
     [ -n "$mode" ] || fail "Specify -ser or -par together with -run_job."
@@ -212,22 +212,27 @@ run_job() {
     target_dir="$(cd -- "$target_path" && pwd -P)" \
         || fail "Cannot access run directory: $target_path"
     work_dir_real="$(cd -- "$WORK_DIR" && pwd -P)"
-    case "$target_dir/" in
-        "$work_dir_real/"*)
-            fail "Run directory must be outside the CISD prep directory."
-            ;;
-    esac
-    case "$work_dir_real/" in
-        "$target_dir/"*)
-            fail "Run directory must not contain the CISD prep directory."
-            ;;
-    esac
+    
+    # Check if the source and destination are the same directory
+    if [ "$target_dir" = "$work_dir_real" ]; then
+        printf 'Warning: WORK_DIR and target_dir are the exact same folder (%s). \n' "$target_dir"
+        read -r -p "Do you want to continue? (y/n) " response
+        case "$response" in
+            [yY][eE][sS]|[yY])
+                ;;
+            *)
+                fail "Operation cancelled by user."
+                ;;
+        esac
+    else
+        # Only copy if they are different directories
+        shopt -s nullglob
+        files=("$WORK_DIR"/*)
+        shopt -u nullglob
+        [ "${#files[@]}" -gt 0 ] || fail "No files to copy from $WORK_DIR."
+        cp -R -- "${files[@]}" "$target_dir/"
+    fi
 
-    shopt -s nullglob
-    files=("$WORK_DIR"/*)
-    shopt -u nullglob
-    [ "${#files[@]}" -gt 0 ] || fail "No files to copy from $WORK_DIR."
-    cp -R -- "${files[@]}" "$target_dir/"
 
     (
         local job_status
@@ -248,12 +253,15 @@ run_job() {
             job_status=$?
         fi
 
-        shopt -s nullglob
-        files=("$target_dir"/*)
-        shopt -u nullglob
-        if [ "${#files[@]}" -gt 0 ]; then
-            cp -R -- "${files[@]}" "$CISD_DIR/" \
-                || { echo "Error: Failed to copy job files back to $CISD_DIR." >&2; exit 1; }
+        # Only copy back files if target_dir and CISD_DIR are different
+        if [ "$target_dir" != "$CISD_DIR" ]; then
+            shopt -s nullglob
+            files=("$target_dir"/*)
+            shopt -u nullglob
+            if [ "${#files[@]}" -gt 0 ]; then
+                cp -R -- "${files[@]}" "$CISD_DIR/" \
+                    || { echo "Error: Failed to copy job files back to $CISD_DIR." >&2; exit 1; }
+            fi
         fi
 
         if [ "$job_status" -eq 0 ]; then
