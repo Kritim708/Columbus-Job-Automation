@@ -57,15 +57,28 @@ set_config_value() {
 }
 
 validate_columbus_path() {
-    local path="$1" file
-    for file in runc colinp xyz2col.x; do
-        [ -f "$path/$file" ] || die "Could not find '$path/$file'."
+    local path="$1" file missing
+    while true; do
+        missing=""
+        for file in runc colinp pciudg.x xyz2col.x; do
+            if [ ! -f "$path/$file" ]; then
+                missing+="${missing:+, }$path/$file"
+            fi
+        done
+        if [ -z "$missing" ]; then
+            REPLY="$path"
+            return 0
+        fi
+
+        echo "Could not find required Columbus files: $missing" >&2
+        read -r -p "Enter Columbus directory: " path || die "Could not read Columbus directory."
     done
 }
 
 set_columbus_path() {
     local path="$1"
     validate_columbus_path "$path"
+    path="$REPLY"
     set_config_value COLUMBUS "$path"
     set_config_value SCRIPTS_DIR "$SCRIPTS_DIR"
     echo "Saved Columbus path in $SCRIPTS_DIR/config.txt."
@@ -75,18 +88,23 @@ ensure_columbus_path() {
     local path
     path="$(read_columbus_path)"
     if [ -z "$path" ]; then
-        read -r -p "Enter Columbus directory [$DEFAULT_COLUMBUS]: " path
+        read -r -p "Enter Columbus directory [$DEFAULT_COLUMBUS]: " path || die "Could not read Columbus directory."
         path=${path:-$DEFAULT_COLUMBUS}
-        set_columbus_path "$path"
     fi
     validate_columbus_path "$path"
+    path="$REPLY"
+    set_config_value COLUMBUS "$path"
     set_config_value SCRIPTS_DIR "$SCRIPTS_DIR"
     COLUMBUS_PATH="$path"
 }
 
 validate_diradical() {
-    [[ "$1" =~ ^[a-zA-Z0-9]+_[0-9]+$ ]] || \
-        die "Invalid diradical format: $1 (expected molecule_number, e.g. thiazole_24)."
+    local diradical="$1"
+    while [[ ! "$diradical" =~ ^[a-zA-Z0-9]+_[0-9]+$ ]]; do
+        echo "Invalid diradical format: $diradical (expected molecule_number, e.g. thiazole_24)." >&2
+        read -r -p "Enter diradical name: " diradical || die "Could not read diradical name."
+    done
+    REPLY="$diradical"
 }
 
 # Returns 0 if valid; otherwise prints the reason to stderr and returns 1
@@ -179,9 +197,10 @@ add_diradical() {
     local diradical="${1:-}"
 
     if [ -z "$diradical" ]; then
-        read -r -p "Enter diradical name (e.g. thiazole_24): " diradical
+        read -r -p "Enter diradical name (e.g. thiazole_24): " diradical || die "Could not read diradical name."
     fi
     validate_diradical "$diradical"
+    diradical="$REPLY"
 
     ensure_columbus_path
     bash "$SCRIPTS_DIR/Utilities/setup_diradical.sh" "$diradical" \
@@ -194,12 +213,13 @@ remove_diradical() {
     local -a paths=() found=()
 
     if [ -z "$diradical" ]; then
-        read -r -p "Enter diradical name to remove (or q to cancel): " diradical
+        read -r -p "Enter diradical name to remove (or q to cancel): " diradical || die "Could not read diradical name."
         case "${diradical,,}" in
             q|quit) echo "Removal cancelled."; return 0 ;;
         esac
     fi
     validate_diradical "$diradical"
+    diradical="$REPLY"
 
     paths=(
         "$WORKING_DIR/diradicals/$diradical"
